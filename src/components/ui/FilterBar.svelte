@@ -1,96 +1,96 @@
 <script lang="ts">
-  import { format } from "date-fns";
-  import {
-    Calendar as CalendarIcon,
-    ChevronsRight,
-    ChevronsLeft,
-    X,
-    Download,
-  } from "@lucide/svelte";
+import { format } from "date-fns";
+import {
+	Calendar as CalendarIcon,
+	ChevronsRight,
+	ChevronsLeft,
+	X,
+	Download,
+} from "@lucide/svelte";
 
-  export type SortOption = { value: string; label: string };
+export type SortOption = { value: string; label: string };
 
-  interface Props {
-    sortOptions: SortOption[];
-    sort: string;
-    onSortChange: (value: string) => void;
-    dateRange?: { from: Date; to?: Date };
-    onDateRangeChange: (range?: { from: Date; to?: Date }) => void;
-    visibility?: string;
-    onVisibilityChange?: (value: string) => void;
-    onCollapseAll: () => void;
-    onExpandAll: () => void;
-    onDownloadAll: () => void;
-    showVisibilityFilter: boolean;
-  }
+interface Props {
+	sortOptions: SortOption[];
+	sort: string;
+	onSortChange: (value: string) => void;
+	dateRange?: { from: Date; to?: Date };
+	onDateRangeChange: (range?: { from: Date; to?: Date }) => void;
+	visibility?: string;
+	onVisibilityChange?: (value: string) => void;
+	onCollapseAll: () => void;
+	onExpandAll: () => void;
+	onDownloadAll: () => void;
+	showVisibilityFilter: boolean;
+}
 
-  let {
-    sortOptions,
-    sort,
-    onSortChange,
-    dateRange,
-    onDateRangeChange,
-    visibility = "all",
-    onVisibilityChange,
-    onCollapseAll,
-    onExpandAll,
-    onDownloadAll,
-    showVisibilityFilter,
-  }: Props = $props();
+let {
+	sortOptions,
+	sort,
+	onSortChange,
+	dateRange,
+	onDateRangeChange,
+	visibility = "all",
+	onVisibilityChange,
+	onCollapseAll,
+	onExpandAll,
+	onDownloadAll,
+	showVisibilityFilter,
+}: Props = $props();
 
-  let fromDateInput: HTMLInputElement;
-  let toDateInput: HTMLInputElement;
+let fromDateInput: HTMLInputElement;
+let toDateInput: HTMLInputElement;
 
-  function handleSortChange(e: Event) {
-    const target = e.target as HTMLSelectElement;
-    onSortChange(target.value);
-  }
+function handleSortChange(e: Event) {
+	const target = e.target as HTMLSelectElement;
+	onSortChange(target.value);
+}
 
-  function handleVisibilityChange(e: Event) {
-    if (!onVisibilityChange) return;
-    const target = e.target as HTMLSelectElement;
-    onVisibilityChange(target.value);
-  }
+function handleVisibilityChange(e: Event) {
+	if (!onVisibilityChange) return;
+	const target = e.target as HTMLSelectElement;
+	onVisibilityChange(target.value);
+}
 
-  function handleDateFromChange(e: Event) {
-    const target = e.target as HTMLInputElement;
-    if (target.value) {
-      const fromDate = new Date(target.value);
-      onDateRangeChange({
-        from: fromDate,
-        to: dateRange?.to,
-      });
-    }
-  }
+function handleDateFromChange(e: Event) {
+	const target = e.target as HTMLInputElement;
+	if (target.value) {
+		const fromDate = new Date(target.value);
+		onDateRangeChange({
+			from: fromDate,
+			to: dateRange?.to,
+		});
+	}
+}
 
-  function handleDateToChange(e: Event) {
-    const target = e.target as HTMLInputElement;
-    if (target.value && dateRange?.from) {
-      const toDate = new Date(target.value);
-      onDateRangeChange({
-        from: dateRange.from,
-        to: toDate,
-      });
-    }
-  }
+function handleDateToChange(e: Event) {
+	const target = e.target as HTMLInputElement;
+	if (target.value && dateRange?.from) {
+		const toDate = new Date(target.value);
+		onDateRangeChange({
+			from: dateRange.from,
+			to: toDate,
+		});
+	}
+}
 
-  function clearDateRange() {
-    onDateRangeChange(undefined);
-    if (fromDateInput) fromDateInput.value = "";
-    if (toDateInput) toDateInput.value = "";
-  }
+function clearDateRange() {
+	onDateRangeChange(undefined);
+	if (fromDateInput) fromDateInput.value = "";
+	if (toDateInput) toDateInput.value = "";
+}
 
-  function formatDateRange() {
-    if (!dateRange?.from) return "Pick a date range";
+function formatDateRange() {
+	if (!dateRange?.from) return "Pick a date range";
 
-    if (dateRange.to) {
-      return `${format(dateRange.from, "LLL dd, y")} - ${format(
-        dateRange.to,
-        "LLL dd, y"
-      )}`;
-    }
-    return format(dateRange.from, "LLL dd, y");
-  }
+	if (dateRange.to) {
+		return `${format(dateRange.from, "LLL dd, y")} - ${format(
+			dateRange.to,
+			"LLL dd, y",
+		)}`;
+	}
+	return format(dateRange.from, "LLL dd, y");
+}
 </script>
 
 <div class="card bg-base-100 shadow-sm border border-base-300">
