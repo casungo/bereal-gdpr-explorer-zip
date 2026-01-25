@@ -1,6 +1,6 @@
 import { get, writable } from "svelte/store";
 import type { BeRealData, MediaMap, ProgressCallback } from "@/lib/types";
-import { parseBeRealZip } from "@/lib/zip-parser";
+import { parseAnalyticsFile, parseBeRealZip } from "@/lib/zip-parser";
 
 type ProgressInfo = { total: number; loaded: number; message: string };
 
@@ -10,7 +10,8 @@ interface AppStore {
 	isLoading: import("svelte/store").Writable<boolean>;
 	progress: import("svelte/store").Writable<ProgressInfo>;
 	error: import("svelte/store").Writable<string | null>;
-	loadFiles: (zipFile: File, gzFile: File) => Promise<void>;
+	loadFiles: (zipFile: File, gzFile: File | null) => Promise<void>;
+	loadAnalytics: (gzFile: File) => Promise<void>;
 	resetData: () => void;
 }
 
@@ -25,9 +26,9 @@ function createAppStore(): AppStore {
 	});
 	const error = writable<string | null>(null);
 
-	async function loadFiles(zipFile: File, gzFile: File): Promise<void> {
-		if (!zipFile || !gzFile) {
-			error.set("Please select both a ZIP file and a GZ file.");
+	async function loadFiles(zipFile: File, gzFile: File | null): Promise<void> {
+		if (!zipFile) {
+			error.set("Please select a ZIP file.");
 			return;
 		}
 
@@ -36,7 +37,7 @@ function createAppStore(): AppStore {
 			return;
 		}
 
-		if (!gzFile.name.endsWith(".gz")) {
+		if (gzFile && !gzFile.name.endsWith(".gz")) {
 			error.set("Please select a valid GZ file.");
 			return;
 		}
@@ -88,6 +89,30 @@ function createAppStore(): AppStore {
 		}
 	}
 
+	async function loadAnalytics(gzFile: File): Promise<void> {
+		if (!gzFile.name.endsWith(".gz")) {
+			error.set("Please select a valid GZ file.");
+			return;
+		}
+
+		isLoading.set(true);
+		error.set(null);
+		
+		try {
+			const analyticsData = await parseAnalyticsFile(gzFile);
+			
+			data.update((currentData) => {
+				if (!currentData) return { analytics: analyticsData };
+				return { ...currentData, analytics: analyticsData };
+			});
+		} catch (e) {
+			const errorMessage = e instanceof Error ? e.message : "Failed to load analytics file.";
+			error.set(errorMessage);
+		} finally {
+			isLoading.set(false);
+		}
+	}
+
 	function resetData(): void {
 		const currentMedia = get(media);
 		if (currentMedia) {
@@ -111,6 +136,7 @@ function createAppStore(): AppStore {
 		progress,
 		error,
 		loadFiles,
+		loadAnalytics,
 		resetData,
 	};
 }

@@ -292,11 +292,11 @@ function normalizePath(path: string | undefined): string {
 
 export async function parseBeRealZip(
 	zipFile: File,
-	gzFile: File,
+	gzFile: File | null,
 	onProgress: ProgressCallback,
 ): Promise<{ data: BeRealData; media: MediaMap }> {
-	if (!zipFile || !gzFile) {
-		throw new Error("Both zip and gz files are required");
+	if (!zipFile) {
+		throw new Error("Zip file is required");
 	}
 
 	if (!onProgress || typeof onProgress !== "function") {
@@ -307,15 +307,16 @@ export async function parseBeRealZip(
 		throw new Error("First file must be a .zip file");
 	}
 
-	if (!gzFile.name.endsWith(".gz")) {
+	if (gzFile && !gzFile.name.endsWith(".gz")) {
 		throw new Error("Second file must be a .gz file");
 	}
 
 	onProgress({ total: 100, loaded: 2, message: "Starting data parsing..." });
 	onProgress({ total: 100, loaded: 5, message: "Reading files..." });
+
 	const [zipBuffer, gzBuffer] = await Promise.all([
 		readFileAsArrayBuffer(zipFile),
-		readFileAsArrayBuffer(gzFile),
+		gzFile ? readFileAsArrayBuffer(gzFile) : Promise.resolve(null),
 	]);
 
 	onProgress({
@@ -326,11 +327,14 @@ export async function parseBeRealZip(
 
 	const rawZip = await JSZip.loadAsync(zipBuffer);
 
-	const analyticsString = pako.ungzip(gzBuffer, { to: "string" });
-	const analyticsData = analyticsString
-		.split("\n")
-		.filter((line) => line.trim() !== "")
-		.map((line) => JSON.parse(line));
+	let analyticsData: any[] = [];
+	if (gzBuffer) {
+		const analyticsString = pako.ungzip(gzBuffer, { to: "string" });
+		analyticsData = analyticsString
+			.split("\n")
+			.filter((line) => line.trim() !== "")
+			.map((line) => JSON.parse(line));
+	}
 
 	const topLevelDir = Object.keys(rawZip.files)
 		.find((p) => p.endsWith("/") && p.split("/").length === 2)
@@ -630,4 +634,18 @@ export async function parseBeRealZip(
 	onProgress({ total: 100, loaded: 100, message: "Done!" });
 
 	return { data, media };
+}
+
+export async function parseAnalyticsFile(gzFile: File): Promise<any[]> {
+	if (!gzFile.name.endsWith(".gz")) {
+		throw new Error("File must be a .gz file");
+	}
+
+	const gzBuffer = await readFileAsArrayBuffer(gzFile);
+	const analyticsString = pako.ungzip(gzBuffer, { to: "string" });
+	
+	return analyticsString
+		.split("\n")
+		.filter((line) => line.trim() !== "")
+		.map((line) => JSON.parse(line));
 }

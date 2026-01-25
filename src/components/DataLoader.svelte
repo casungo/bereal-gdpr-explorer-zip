@@ -19,12 +19,18 @@ function handleFiles(files: FileList | null) {
 	const newZip = filesArray.find((f) => f.name.endsWith(".zip")) || null;
 	const newGz = filesArray.find((f) => f.name.endsWith(".gz")) || null;
 
-	if (newZip) zipFile = newZip;
-	if (newGz) gzFile = newGz;
+	if (newZip) {
+		zipFile = newZip;
+		analysisCalled = false;
+	}
+	if (newGz) {
+		gzFile = newGz;
+		analysisCalled = false;
+	}
 }
 
 function handleAnalyze() {
-	if (zipFile && gzFile && !$isLoading && !analysisCalled) {
+	if (zipFile && !$isLoading && !analysisCalled) {
 		analysisCalled = true;
 		loadFiles(zipFile, gzFile);
 	}
@@ -80,6 +86,19 @@ $effect(() => {
           {gzFile}
           onFilesSelected={handleFiles}
         />
+
+        {#if zipFile && !gzFile && !$isLoading}
+          <div
+            class="mt-6 flex justify-center"
+          >
+            <button
+              class="btn btn-primary"
+              onclick={handleAnalyze}
+            >
+              Analyze without Analytics Data
+            </button>
+          </div>
+        {/if}
       {/if}
 
       <div

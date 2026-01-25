@@ -14,10 +14,10 @@ let { friends = [], requests = [] } = $props<{
 
 let activeTab = $state("friends");
 
-const friendsSortable = createSortableData<Friend>(friends);
+const friendsSortable = createSortableData<Friend>(() => friends);
 const friendsSortConfig = $derived(friendsSortable.sortConfig);
 
-const requestsSortable = createSortableData<FriendRequest>(requests);
+const requestsSortable = createSortableData<FriendRequest>(() => requests);
 const requestsSortConfig = $derived(requestsSortable.sortConfig);
 
 function handleFriendsExport() {

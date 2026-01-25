@@ -6,10 +6,11 @@ import { createSortableData } from "@/lib/sortable.svelte.ts";
 import { exportToCsv } from "@/lib/export";
 import { format, isValid } from "date-fns";
 import { ArrowUpDown, Download } from "@lucide/svelte";
+import { appStore } from "@/lib/stores/app";
 
 let { events = [] } = $props();
 
-const eventsSortable = createSortableData<AnalyticsEvent>(events);
+const eventsSortable = createSortableData<AnalyticsEvent>(() => events);
 const eventsSortConfig = $derived(eventsSortable.sortConfig);
 
 function handleExport() {
@@ -212,15 +213,54 @@ function getSortIndicator(
         </div>
       {:else}
         <div
-          class="text-center py-8 text-base-content/50"
+          class="flex flex-col items-center justify-center p-8 bg-base-200/50 rounded-xl border-2 border-dashed border-base-300 gap-4"
         >
-          <p
+          <div
+            class="text-center"
           >
-            No
-            analytics
-            data
-            found.
-          </p>
+            <h3
+              class="text-lg font-semibold"
+            >
+              No
+              Analytics
+              Data
+              Found
+            </h3>
+            <p
+              class="text-base-content/70 text-sm max-w-md mt-2"
+            >
+              The
+              analytics
+              file
+              (.json.gz)
+              was
+              not
+              loaded.
+              You
+              can
+              upload
+              it
+              now
+              to
+              view
+              your
+              analytics
+              without
+              reloading
+              everything.
+            </p>
+          </div>
+          <input
+            type="file"
+            accept=".json.gz"
+            class="file-input file-input-bordered file-input-primary w-full max-w-xs"
+            onchange={async (e) => {
+              const file = e.currentTarget.files?.[0];
+              if (file) {
+                 await appStore.loadAnalytics(file);
+              }
+            }}
+          />
         </div>
       {/if}
     </div>

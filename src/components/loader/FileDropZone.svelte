@@ -113,7 +113,7 @@ function handleFileChange(e: Event) {
           class="font-medium truncate"
         >
           {gzFile?.name ||
-            "Analytics Data (.json.gz)"}
+            "Analytics Data (.json.gz) - Optional"}
         </span>
       </div>
       <div
