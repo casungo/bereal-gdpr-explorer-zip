@@ -133,6 +133,16 @@ function mediaExtension(media: Media, fallback = "jpg"): string {
 	return extension && extension.length <= 5 ? extension : fallback;
 }
 
+function isImageMedia(media: Media): boolean {
+	return media.mediaType === "image" || media.mimeType?.startsWith("image/");
+}
+
+function assertImageMedia(media: Media, label: string) {
+	if (!isImageMedia(media)) {
+		throw new Error(`${label} media is not an image`);
+	}
+}
+
 function isJpegBlob(blob: Blob, filename: string): boolean {
 	const type = blob.type.toLowerCase();
 	return (
@@ -354,18 +364,15 @@ export async function downloadPosts(
 		const post = posts[0];
 		let primaryMedia: Media;
 		let secondaryMedia: Media;
-		let btsMedia: Media | undefined;
 
 		if ("primary" in post) {
 			const postAsPost = post as Post;
 			primaryMedia = postAsPost.primary;
 			secondaryMedia = postAsPost.secondary;
-			btsMedia = postAsPost.btsMedia;
 		} else {
 			const postAsMemory = post as Memory;
 			primaryMedia = postAsMemory.frontImage;
 			secondaryMedia = postAsMemory.backImage;
-			btsMedia = postAsMemory.btsMedia;
 		}
 
 		if (!primaryMedia || !secondaryMedia) {
@@ -376,6 +383,7 @@ export async function downloadPosts(
 		const secondaryUrl = mediaMap[secondaryMedia.path];
 
 		if (type === "primary") {
+			assertImageMedia(primaryMedia, "Primary");
 			const filename = `${zipName}-primary.${mediaExtension(primaryMedia)}`;
 			const blob = await prepareMediaBlob(
 				await getBlobFromUrl(primaryUrl),
@@ -384,6 +392,7 @@ export async function downloadPosts(
 			);
 			triggerDownload(blob, filename, getPostDate(post));
 		} else if (type === "secondary") {
+			assertImageMedia(secondaryMedia, "Secondary");
 			const filename = `${zipName}-secondary.${mediaExtension(secondaryMedia)}`;
 			const blob = await prepareMediaBlob(
 				await getBlobFromUrl(secondaryUrl),
@@ -392,35 +401,29 @@ export async function downloadPosts(
 			);
 			triggerDownload(blob, filename, getPostDate(post));
 		} else if (type === "merged") {
-			if (btsMedia && mediaMap[btsMedia.path]) {
-				const blob = await getBlobFromUrl(mediaMap[btsMedia.path]);
-				triggerDownload(blob, `${zipName}.mp4`, getPostDate(post));
-			} else {
-				const blob = await prepareMediaBlob(
-					await createMergedImage(primaryUrl, secondaryUrl),
-					`${zipName}-merged.jpg`,
-					post,
-				);
-				triggerDownload(blob, `${zipName}-merged.jpg`, getPostDate(post));
-			}
+			assertImageMedia(primaryMedia, "Primary");
+			assertImageMedia(secondaryMedia, "Secondary");
+			const blob = await prepareMediaBlob(
+				await createMergedImage(primaryUrl, secondaryUrl),
+				`${zipName}-merged.jpg`,
+				post,
+			);
+			triggerDownload(blob, `${zipName}-merged.jpg`, getPostDate(post));
 		}
 	} else {
 		const zip = new JSZip();
 		for (const post of posts) {
 			let primaryMedia: Media;
 			let secondaryMedia: Media;
-			let btsMedia: Media | undefined;
 
 			if ("primary" in post) {
 				const postAsPost = post as Post;
 				primaryMedia = postAsPost.primary;
 				secondaryMedia = postAsPost.secondary;
-				btsMedia = postAsPost.btsMedia;
 			} else {
 				const postAsMemory = post as Memory;
 				primaryMedia = postAsMemory.frontImage;
 				secondaryMedia = postAsMemory.backImage;
-				btsMedia = postAsMemory.btsMedia;
 			}
 
 			if (!primaryMedia || !secondaryMedia) {
@@ -436,20 +439,13 @@ export async function downloadPosts(
 				{ date: fileDate },
 			);
 
-			if (btsMedia && mediaMap[btsMedia.path]) {
-				const videoBlob = await getBlobFromUrl(mediaMap[btsMedia.path]);
-				postFolder?.file(`video.mp4`, videoBlob, { date: fileDate });
-				postFolder?.file(`video.xmp`, createXmpSidecar(post), {
-					date: fileDate,
-				});
-			}
-
 			const primaryBlob = await getBlobFromUrl(mediaMap[primaryMedia.path]);
 			const secondaryBlob = await getBlobFromUrl(mediaMap[secondaryMedia.path]);
 			const primaryFilename = `primary.${mediaExtension(primaryMedia)}`;
 			const secondaryFilename = `secondary.${mediaExtension(secondaryMedia)}`;
 
 			if (type === "primary" || type === "both") {
+				assertImageMedia(primaryMedia, "Primary");
 				const preparedBlob = await prepareMediaBlob(
 					primaryBlob,
 					primaryFilename,
@@ -463,6 +459,7 @@ export async function downloadPosts(
 				}
 			}
 			if (type === "secondary" || type === "both") {
+				assertImageMedia(secondaryMedia, "Secondary");
 				const preparedBlob = await prepareMediaBlob(
 					secondaryBlob,
 					secondaryFilename,
@@ -476,17 +473,17 @@ export async function downloadPosts(
 				}
 			}
 			if (type === "merged") {
-				if (!btsMedia) {
-					const mergedBlob = await prepareMediaBlob(
-						await createMergedImage(
-							mediaMap[primaryMedia.path],
-							mediaMap[secondaryMedia.path],
-						),
-						"merged.jpg",
-						post,
-					);
-					postFolder?.file(`merged.jpg`, mergedBlob, { date: fileDate });
-				}
+				assertImageMedia(primaryMedia, "Primary");
+				assertImageMedia(secondaryMedia, "Secondary");
+				const mergedBlob = await prepareMediaBlob(
+					await createMergedImage(
+						mediaMap[primaryMedia.path],
+						mediaMap[secondaryMedia.path],
+					),
+					"merged.jpg",
+					post,
+				);
+				postFolder?.file(`merged.jpg`, mergedBlob, { date: fileDate });
 			}
 		}
 		const zipBlob = await zip.generateAsync({ type: "blob" });
