@@ -11,7 +11,7 @@ let { settings, tokens = [] } = $props<{
 	tokens: PushToken[];
 }>();
 
-const tokensSortable = createSortableData<PushToken>(tokens);
+const tokensSortable = createSortableData<PushToken>(() => tokens);
 const tokensSortConfig = $derived(tokensSortable.sortConfig);
 
 function handleExport() {

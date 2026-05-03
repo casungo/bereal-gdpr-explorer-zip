@@ -20,11 +20,13 @@ let {
 }>();
 
 let selectedConversationId = $state<string | null>(
-	conversations[0]?.id || null,
+	null,
 );
 
+const activeConversationId = $derived(selectedConversationId ?? conversations[0]?.id);
+
 const selectedConversation = $derived(
-	conversations.find((c: Conversation) => c.id === selectedConversationId),
+	conversations.find((c: Conversation) => c.id === activeConversationId),
 );
 
 const filteredSelectedMessages = $derived(
@@ -127,7 +129,7 @@ function isValidMessage(content: string): boolean {
                   1
               ]}
             {@const isSelected =
-              selectedConversationId ===
+              activeConversationId ===
               convo.id}
 
             <div

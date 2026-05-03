@@ -7,9 +7,9 @@ import { exportToCsv } from "@/lib/export";
 import { format, isValid } from "date-fns";
 import { ArrowUpDown, Download } from "@lucide/svelte";
 
-let { events = [] } = $props();
+let { events = [] }: { events?: AnalyticsEvent[] } = $props();
 
-const eventsSortable = createSortableData<AnalyticsEvent>(events);
+const eventsSortable = createSortableData<AnalyticsEvent>(() => events);
 const eventsSortConfig = $derived(eventsSortable.sortConfig);
 
 function handleExport() {

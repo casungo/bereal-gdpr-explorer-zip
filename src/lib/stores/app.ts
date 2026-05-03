@@ -1,4 +1,5 @@
 import { get, writable } from "svelte/store";
+import { demoData, demoMedia } from "@/lib/demo-data";
 import type { BeRealData, MediaMap, ProgressCallback } from "@/lib/types";
 import { parseBeRealZip } from "@/lib/zip-parser";
 
@@ -10,7 +11,8 @@ interface AppStore {
 	isLoading: import("svelte/store").Writable<boolean>;
 	progress: import("svelte/store").Writable<ProgressInfo>;
 	error: import("svelte/store").Writable<string | null>;
-	loadFiles: (zipFile: File, gzFile: File) => Promise<void>;
+	loadFiles: (zipFile: File, gzFile: File | null) => Promise<void>;
+	loadDemoData: () => void;
 	resetData: () => void;
 }
 
@@ -25,9 +27,9 @@ function createAppStore(): AppStore {
 	});
 	const error = writable<string | null>(null);
 
-	async function loadFiles(zipFile: File, gzFile: File): Promise<void> {
-		if (!zipFile || !gzFile) {
-			error.set("Please select both a ZIP file and a GZ file.");
+	async function loadFiles(zipFile: File, gzFile: File | null): Promise<void> {
+		if (!zipFile) {
+			error.set("Please select a ZIP file.");
 			return;
 		}
 
@@ -36,7 +38,7 @@ function createAppStore(): AppStore {
 			return;
 		}
 
-		if (!gzFile.name.endsWith(".gz")) {
+		if (gzFile && !gzFile.name.endsWith(".gz")) {
 			error.set("Please select a valid GZ file.");
 			return;
 		}
@@ -104,6 +106,12 @@ function createAppStore(): AppStore {
 		progress.set({ total: 100, loaded: 0, message: "" });
 	}
 
+	function loadDemoData(): void {
+		resetData();
+		data.set(demoData);
+		media.set(demoMedia);
+	}
+
 	return {
 		data,
 		media,
@@ -111,6 +119,7 @@ function createAppStore(): AppStore {
 		progress,
 		error,
 		loadFiles,
+		loadDemoData,
 		resetData,
 	};
 }

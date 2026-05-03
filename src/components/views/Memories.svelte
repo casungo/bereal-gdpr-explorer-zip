@@ -60,7 +60,6 @@ const filteredMemories = $derived(() => {
 		switch (sort) {
 			case "takenAt-asc":
 				return dateA - dateB;
-			case "takenAt-desc":
 			default:
 				return dateB - dateA;
 		}
@@ -198,7 +197,7 @@ function toggleMonth(monthKey: string) {
           class="card bg-base-100 shadow-xl overflow-hidden"
         >
           <div
-            class="flex items-center justify-between p-4 hover:bg-base-200 cursor-pointer"
+            class="flex flex-col gap-3 p-4 hover:bg-base-200 cursor-pointer sm:flex-row sm:items-center sm:justify-between"
             role="button"
             tabindex="0"
             onclick={() =>
@@ -215,7 +214,7 @@ function toggleMonth(monthKey: string) {
               )}
           >
             <div
-              class="flex items-center gap-2"
+              class="flex min-w-0 items-center gap-2"
             >
               <div
                 class="collapse-arrow {openMonths.includes(
@@ -225,7 +224,7 @@ function toggleMonth(monthKey: string) {
                   : ''} transition-transform"
               ></div>
               <h3
-                class="text-lg font-semibold"
+                class="min-w-0 text-base font-semibold sm:text-lg"
               >
                 {format(
                   new Date(
@@ -242,7 +241,7 @@ function toggleMonth(monthKey: string) {
               </h3>
             </div>
             <button
-              class="btn btn-ghost btn-sm"
+              class="btn btn-ghost btn-sm w-full sm:w-auto"
               onclick={(
                 e,
               ) =>
@@ -252,7 +251,7 @@ function toggleMonth(monthKey: string) {
                 )}
             >
               <Download
-                class="w-4 h-4 mr-2"
+                class="w-4 h-4 sm:mr-2"
               />
               Download
               Month
@@ -319,6 +318,7 @@ function toggleMonth(monthKey: string) {
                           <video
                             src={videoUrl}
                             controls
+                            preload="metadata"
                             class="w-full h-full object-contain"
                             poster={primaryUrl}
                           >

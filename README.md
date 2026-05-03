@@ -10,6 +10,9 @@ BeReal GDPR Explorer is a client-side web application that allows you to explore
 
 - **Privacy-First**: All processing happens in your browser - your data never leaves your device
 - **Combined Front-back Download**: Export your photos just as you see them on Bereal!
+- **Metadata-aware Media Exports**: Preserve original image formats for separate
+  camera exports, generate merged JPEGs, and include timestamp/location metadata
+  in ZIP downloads
 - **Interactive Dashboard**: Explore your BeReal data through various organized views
 - **Analytics & Insights**: Discover patterns in your posting habits, most-used reactions, and more
 - **Media Support**: View all your photos and videos from the export
@@ -69,19 +72,46 @@ Visit the [live site](https://berealgdprviewer.eu/)
 
 ## File Upload
 
+### Getting Your BeReal Export
+
+BeReal does not provide a regular "export all" button in every account. To get
+your GDPR export, request a downloadable copy of your account data from BeReal:
+
+1. Open BeReal and go to your profile/settings help area, then contact support
+   with a request for a copy of your personal data.
+1. If you cannot use the in-app flow, submit a request through the official
+   [BeReal Help Center request form](https://help.bereal.com/hc/en-us/requests/new).
+1. When BeReal sends the export, download the `.zip` archive. If the export also
+   includes a `.json.gz` analytics file, you can add it too, but it is optional.
+
 ### Supported Files
 
-The application requires two files from your BeReal export:
+The application supports these files from your BeReal export:
 
 1. **Main Archive** (.zip) - Contains all your data
-1. **App Analytics Data** (.json.gz) - Contains only app analytics
+1. **App Analytics Data** (.json.gz) - Optional file that contains only app
+   analytics
 
 ### Upload Process
 
-1. Drag and drop both files onto the upload area, or click to browse
+1. Drag and drop the `.zip` file onto the upload area, or click to browse
+1. Optionally add the `.json.gz` file if you want analytics events
 1. The application will automatically detect and process the files
 1. Wait for the parsing to complete (may take some time for large archives)
 1. Start exploring your data!
+
+## Media Exports
+
+When downloading posts or memories, separate camera files keep BeReal's original
+media format, such as `.webp` when that is what the export contains. Generated
+picture-in-picture merged images are saved as `.jpg` for broad gallery and EXIF
+compatibility.
+
+ZIP downloads also include `metadata.json` with the BeReal timestamp and
+location when BeReal provided that data. JPEG outputs receive embedded EXIF
+date/location metadata where the browser can safely add it. Non-JPEG originals
+and videos use `.xmp` sidecars as a fallback so the original media bytes do not
+need to be converted or rewritten.
 
 ## License
 

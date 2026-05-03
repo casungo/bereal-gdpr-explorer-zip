@@ -11,6 +11,10 @@ import { Github } from "@lucide/svelte";
     A privacy-focused tool to explore and analyze your BeReal GDPR data export.
     View your posts, memories, friends, and more.
   </p>
+  <div class="mt-5 text-sm opacity-75 max-w-2xl mx-auto">
+    Request your export from BeReal support in the app, or use the official
+    request form and ask for a downloadable copy of your account data.
+  </div>
   <div class="mt-6 flex justify-center">
     <a
       href="https://github.com/casungo/bereal-gdpr-explorer-zip"

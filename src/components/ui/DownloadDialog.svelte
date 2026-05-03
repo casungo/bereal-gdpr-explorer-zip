@@ -85,6 +85,35 @@ function handleBackdropClick(e: MouseEvent) {
         for
         your
         download.
+        Separate
+        camera
+        exports
+        keep
+        BeReal's
+        original
+        media
+        format.
+        Merged
+        picture-in-picture
+        images
+        are
+        exported
+        as
+        JPEG.
+        ZIP
+        downloads
+        include
+        timestamps
+        plus
+        embedded
+        or
+        fallback
+        sidecar
+        metadata
+        when
+        BeReal
+        provided
+        them.
         You
         are
         about
@@ -171,7 +200,7 @@ function handleBackdropClick(e: MouseEvent) {
               >Both
               images
               as
-              separate
+              original-format
               files</span
             >
           </div>
@@ -195,6 +224,7 @@ function handleBackdropClick(e: MouseEvent) {
               class="label-text"
               >Merged
               picture-in-picture
+              JPEG
               image</span
             >
           </div>

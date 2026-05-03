@@ -7,7 +7,7 @@ import WelcomeHero from "@/components/loader/WelcomeHero.svelte";
 import LoadingState from "@/components/loader/LoadingState.svelte";
 import FileDropZone from "@/components/loader/FileDropZone.svelte";
 
-const { isLoading, progress, error, loadFiles } = appStore;
+const { isLoading, progress, error, loadFiles, loadDemoData } = appStore;
 
 let zipFile: File | null = $state(null);
 let gzFile: File | null = $state(null);
@@ -21,17 +21,18 @@ function handleFiles(files: FileList | null) {
 
 	if (newZip) zipFile = newZip;
 	if (newGz) gzFile = newGz;
+	if (newZip || newGz) analysisCalled = false;
 }
 
 function handleAnalyze() {
-	if (zipFile && gzFile && !$isLoading && !analysisCalled) {
+	if (zipFile && !$isLoading && !analysisCalled) {
 		analysisCalled = true;
 		loadFiles(zipFile, gzFile);
 	}
 }
 
 $effect(() => {
-	if (zipFile && gzFile) {
+	if (zipFile) {
 		handleAnalyze();
 	}
 });
@@ -80,6 +81,23 @@ $effect(() => {
           {gzFile}
           onFilesSelected={handleFiles}
         />
+        <div
+          class="mt-4 flex flex-col items-center gap-3 sm:flex-row sm:justify-center"
+        >
+          <button
+            class="btn btn-primary w-full sm:w-auto"
+            onclick={loadDemoData}
+          >
+            Explore demo data
+          </button>
+          {#if zipFile && !gzFile}
+            <p
+              class="text-center text-sm opacity-70"
+            >
+              Analytics data was not selected, so analytics charts will be empty.
+            </p>
+          {/if}
+        </div>
       {/if}
 
       <div

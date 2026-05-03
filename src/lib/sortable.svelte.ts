@@ -6,13 +6,14 @@ interface SortConfig<T> {
 }
 
 export function createSortableData<T extends object>(
-	items: T[],
+	items: T[] | (() => T[]),
 	initialConfig: SortConfig<T> | null = null,
 ) {
 	let sortConfig = $state<SortConfig<T> | null>(initialConfig);
 
 	const sortedItems = $derived.by(() => {
-		const sortableItems = [...items];
+		const currentItems = typeof items === "function" ? items() : items;
+		const sortableItems = [...currentItems];
 		const config = sortConfig;
 		if (config !== null) {
 			sortableItems.sort((a, b) => {

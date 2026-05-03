@@ -11,7 +11,7 @@ let { terms = [] } = $props<{
 	terms: Term[];
 }>();
 
-const termsSortable = createSortableData<Term>(terms, {
+const termsSortable = createSortableData<Term>(() => terms, {
 	key: "date",
 	direction: "descending",
 });

@@ -1,6 +1,6 @@
 <script lang="ts">
 import { onMount, onDestroy } from "svelte";
-import { Camera } from "@lucide/svelte";
+import { Camera, Maximize2, Repeat2, X } from "@lucide/svelte";
 
 type Position = "top-left" | "top-right" | "bottom-left" | "bottom-right";
 
@@ -23,6 +23,7 @@ let {
 let isPrimaryMain = $state(true);
 let position: Position = $state("top-left");
 let isDragging = $state(false);
+let isFullscreen = $state(false);
 let containerRef: HTMLDivElement;
 
 const mainSrc = $derived(isPrimaryMain ? primarySrc : secondarySrc);
@@ -33,10 +34,25 @@ const secondarySrcToDisplay = $derived(
 function handleSwap(e: MouseEvent | KeyboardEvent) {
 	if ("key" in e && e.key !== "Enter" && e.key !== " ") return;
 
-	if ("detail" in e && e.detail === 0) return;
-
 	if (primarySrc && secondarySrc) {
+		e.preventDefault();
+		e.stopPropagation();
 		isPrimaryMain = !isPrimaryMain;
+	}
+}
+
+function openFullscreen(e: MouseEvent) {
+	e.stopPropagation();
+	isFullscreen = true;
+}
+
+function closeFullscreen() {
+	isFullscreen = false;
+}
+
+function closeFullscreenFromBackdrop(e: MouseEvent) {
+	if (e.target === e.currentTarget) {
+		closeFullscreen();
 	}
 }
 
@@ -122,6 +138,8 @@ function getPositionClasses(pos: Position) {
       src={mainSrc}
       alt={isPrimaryMain ? altPrimary : altSecondary}
       class="absolute inset-0 w-full h-full object-contain"
+      loading="lazy"
+      decoding="async"
       draggable="false"
     />
   {:else}
@@ -146,11 +164,62 @@ function getPositionClasses(pos: Position) {
         src={secondarySrcToDisplay}
         alt={isPrimaryMain ? altSecondary : altPrimary}
         class="absolute inset-0 w-full h-full object-cover"
+        loading="lazy"
+        decoding="async"
         draggable="false"
       />
     </div>
   {/if}
+
+  <div class="absolute bottom-3 right-3 flex gap-2">
+    {#if primarySrc && secondarySrc}
+      <button
+        class="btn btn-circle btn-sm bg-base-100/90"
+        aria-label="Swap cameras"
+        onclick={handleSwap}
+      >
+        <Repeat2 class="w-4 h-4" />
+      </button>
+    {/if}
+    {#if mainSrc}
+      <button
+        class="btn btn-circle btn-sm bg-base-100/90"
+        aria-label="Open media"
+        onclick={openFullscreen}
+      >
+        <Maximize2 class="w-4 h-4" />
+      </button>
+    {/if}
+  </div>
 </div>
+
+{#if isFullscreen}
+  <div
+    class="fixed inset-0 z-[100] bg-black/95 p-3 sm:p-6"
+    role="dialog"
+    aria-modal="true"
+    onclick={closeFullscreenFromBackdrop}
+    onkeydown={(e) => e.key === "Escape" && closeFullscreen()}
+    tabindex="-1"
+  >
+    <button
+      class="btn btn-circle btn-sm absolute right-4 top-4 z-10"
+      aria-label="Close media"
+      onclick={closeFullscreen}
+    >
+      <X class="w-4 h-4" />
+    </button>
+    <div class="h-full w-full flex items-center justify-center">
+      {#if mainSrc}
+        <img
+          src={mainSrc}
+          alt={isPrimaryMain ? altPrimary : altSecondary}
+          class="max-h-full max-w-full object-contain"
+        />
+      {/if}
+    </div>
+  </div>
+{/if}
 
 <style>
   .select-none {
@@ -168,6 +237,11 @@ function getPositionClasses(pos: Position) {
   @media (max-width: 768px) {
     .aspect-\[3\/4\] {
       aspect-ratio: 3/4;
+    }
+
+    :global(.btn-circle.btn-sm) {
+      min-height: 2.25rem;
+      width: 2.25rem;
     }
   }
 </style>

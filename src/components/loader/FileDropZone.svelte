@@ -58,6 +58,7 @@ function handleFileChange(e: Event) {
   <input
     type="file"
     multiple
+    accept=".zip,.gz,.json.gz,application/zip,application/gzip"
     class="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
     onchange={handleFileChange}
     id="file-upload"
@@ -88,11 +89,15 @@ function handleFileChange(e: Event) {
       Drag
       and
       drop
-      the
+      your
       `.zip`
-      and
+      file.
+      The
       `.json.gz`
-      files,
+      analytics
+      file
+      is
+      optional,
       or
       click
       to

@@ -16,10 +16,14 @@ let { data, media } = $props<{
 	media: MediaMap;
 }>();
 
-const { posts = [], memories = [], friends = [], realmojis = [] } = data;
-const allPosts: (Post | Memory)[] = [...posts, ...memories];
+const posts = $derived(data.posts ?? []);
+const memories = $derived(data.memories ?? []);
+const friends = $derived(data.friends ?? []);
+const realmojis = $derived(data.realmojis ?? []);
+const allPosts: (Post | Memory)[] = $derived([...posts, ...memories]);
 
-const postsByMonth = allPosts.reduce(
+const postsByMonth = $derived.by(() =>
+	allPosts.reduce(
 	(acc: Record<string, number>, post: Post | Memory) => {
 		const takenAt = "takenAt" in post ? post.takenAt : post.takenTime;
 		const month = format(new Date(takenAt || ""), "yyyy-MM");
@@ -27,61 +31,63 @@ const postsByMonth = allPosts.reduce(
 		return acc;
 	},
 	{} as Record<string, number>,
-);
+));
 
 interface FrequencyChartData {
 	name: string;
 	posts: number;
 }
 
-const frequencyChartData: FrequencyChartData[] = Object.entries(postsByMonth)
+const frequencyChartData: FrequencyChartData[] = $derived(Object.entries(postsByMonth)
 	.map(([month, count]) => ({
 		name: format(new Date(month), "MMM yy"),
 		posts: count as number,
 	}))
-	.sort((a, b) => new Date(a.name).getTime() - new Date(b.name).getTime());
+	.sort((a, b) => new Date(a.name).getTime() - new Date(b.name).getTime()));
 
 const LATE_THRESHOLD_SECONDS = 5 * 60; // 5 minutes
-const latePosts = allPosts.filter((p: Post | Memory) => {
+const latePosts = $derived(allPosts.filter((p: Post | Memory) => {
 	if ("lateInSeconds" in p) {
 		return (p.lateInSeconds || 0) > LATE_THRESHOLD_SECONDS;
 	} else if ("isLate" in p) {
 		return p.isLate;
 	}
 	return false;
-}).length;
-const onTimePosts = allPosts.length - latePosts;
+}).length);
+const onTimePosts = $derived(allPosts.length - latePosts);
 const onTimePercentage =
-	allPosts.length > 0 ? Math.round((onTimePosts / allPosts.length) * 100) : 0;
+	$derived(allPosts.length > 0 ? Math.round((onTimePosts / allPosts.length) * 100) : 0);
 
-const totalRetakes = posts.reduce(
+const totalRetakes = $derived(posts.reduce(
 	(acc: number, p: Post) => acc + p.retakeCounter,
 	0,
-);
+));
 const avgRetakes =
-	posts.length > 0 ? (totalRetakes / posts.length).toFixed(1) : "0";
+	$derived(posts.length > 0 ? (totalRetakes / posts.length).toFixed(1) : "0");
 
-const realmojiCounts = realmojis.reduce(
+const realmojiCounts = $derived.by(() =>
+	realmojis.reduce(
 	(acc: Record<string, number>, realmoji: Realmoji) => {
 		acc[realmoji.emoji] = (acc[realmoji.emoji] || 0) + 1;
 		return acc;
 	},
 	{} as Record<string, number>,
-);
+));
 
 interface TopRealmoji {
 	name: string;
 	value: number;
 }
 
-const topRealmojis: TopRealmoji[] = Object.entries(realmojiCounts)
+const topRealmojis: TopRealmoji[] = $derived(Object.entries(realmojiCounts)
 	.map(([name, value]) => ({
 		name,
 		value: value as number,
 	}))
-	.sort((a, b) => b.value - a.value);
+	.sort((a, b) => b.value - a.value));
 
-const topRealmojiWithImages = realmojis
+const topRealmojiWithImages = $derived.by(() =>
+	realmojis
 	.filter(
 		(r: Realmoji) =>
 			topRealmojis.slice(0, 5).some((tr) => tr.name === r.emoji) &&
@@ -95,9 +101,10 @@ const topRealmojiWithImages = realmojis
 			return acc;
 		},
 		{} as Record<string, (typeof realmojis)[0]>,
-	);
+	));
 
-const visibilityCounts = posts.reduce(
+const visibilityCounts = $derived.by(() =>
+	posts.reduce(
 	(acc: Record<string, number>, post: Post) => {
 		const key = post.visibility.includes("friends-of-friends")
 			? "Friends of Friends"
@@ -106,9 +113,11 @@ const visibilityCounts = posts.reduce(
 		return acc;
 	},
 	{} as Record<string, number>,
-);
+));
 
-const maxFrequencyValue = Math.max(...frequencyChartData.map((d) => d.posts));
+const maxFrequencyValue = $derived(
+	Math.max(1, ...frequencyChartData.map((d) => d.posts)),
+);
 </script>
 
 <div

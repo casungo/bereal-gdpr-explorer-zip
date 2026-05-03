@@ -292,11 +292,11 @@ function normalizePath(path: string | undefined): string {
 
 export async function parseBeRealZip(
 	zipFile: File,
-	gzFile: File,
+	gzFile: File | null,
 	onProgress: ProgressCallback,
 ): Promise<{ data: BeRealData; media: MediaMap }> {
-	if (!zipFile || !gzFile) {
-		throw new Error("Both zip and gz files are required");
+	if (!zipFile) {
+		throw new Error("A zip file is required");
 	}
 
 	if (!onProgress || typeof onProgress !== "function") {
@@ -307,7 +307,7 @@ export async function parseBeRealZip(
 		throw new Error("First file must be a .zip file");
 	}
 
-	if (!gzFile.name.endsWith(".gz")) {
+	if (gzFile && !gzFile.name.endsWith(".gz")) {
 		throw new Error("Second file must be a .gz file");
 	}
 
@@ -315,7 +315,7 @@ export async function parseBeRealZip(
 	onProgress({ total: 100, loaded: 5, message: "Reading files..." });
 	const [zipBuffer, gzBuffer] = await Promise.all([
 		readFileAsArrayBuffer(zipFile),
-		readFileAsArrayBuffer(gzFile),
+		gzFile ? readFileAsArrayBuffer(gzFile) : Promise.resolve(null),
 	]);
 
 	onProgress({
@@ -326,11 +326,13 @@ export async function parseBeRealZip(
 
 	const rawZip = await JSZip.loadAsync(zipBuffer);
 
-	const analyticsString = pako.ungzip(gzBuffer, { to: "string" });
-	const analyticsData = analyticsString
-		.split("\n")
-		.filter((line) => line.trim() !== "")
-		.map((line) => JSON.parse(line));
+	const analyticsData = gzBuffer
+		? pako
+				.ungzip(gzBuffer, { to: "string" })
+				.split("\n")
+				.filter((line) => line.trim() !== "")
+				.map((line) => JSON.parse(line))
+		: [];
 
 	const topLevelDir = Object.keys(rawZip.files)
 		.find((p) => p.endsWith("/") && p.split("/").length === 2)
