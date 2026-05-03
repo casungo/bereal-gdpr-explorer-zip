@@ -2,314 +2,366 @@ import { format } from "date-fns";
 import JSZip from "jszip";
 import type { Media, MediaMap, Memory, Post } from "@/lib/types";
 
-export type DownloadType = "primary" | "secondary" | "both" | "merged";
+export type DownloadType =
+  | "primary"
+  | "secondary"
+  | "both"
+  | "merged"
+  | "video";
 
 async function getBlobFromUrl(url: string): Promise<Blob> {
-	const response = await fetch(url);
-	if (!response.ok) {
-		throw new Error(`Failed to fetch media: ${response.statusText}`);
-	}
-	return response.blob();
+  const response = await fetch(url);
+  if (!response.ok) {
+    throw new Error(`Failed to fetch media: ${response.statusText}`);
+  }
+  return response.blob();
 }
 
 function roundRect(
-	ctx: CanvasRenderingContext2D,
-	x: number,
-	y: number,
-	width: number,
-	height: number,
-	radius: number,
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  width: number,
+  height: number,
+  radius: number,
 ) {
-	ctx.beginPath();
-	ctx.moveTo(x + radius, y);
-	ctx.lineTo(x + width - radius, y);
-	ctx.quadraticCurveTo(x + width, y, x + width, y + radius);
-	ctx.lineTo(x + width, y + height - radius);
-	ctx.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
-	ctx.lineTo(x + radius, y + height);
-	ctx.quadraticCurveTo(x, y + height, x, y + height - radius);
-	ctx.lineTo(x, y + radius);
-	ctx.quadraticCurveTo(x, y, x + radius, y);
-	ctx.closePath();
+  ctx.beginPath();
+  ctx.moveTo(x + radius, y);
+  ctx.lineTo(x + width - radius, y);
+  ctx.quadraticCurveTo(x + width, y, x + width, y + radius);
+  ctx.lineTo(x + width, y + height - radius);
+  ctx.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
+  ctx.lineTo(x + radius, y + height);
+  ctx.quadraticCurveTo(x, y + height, x, y + height - radius);
+  ctx.lineTo(x, y + radius);
+  ctx.quadraticCurveTo(x, y, x + radius, y);
+  ctx.closePath();
 }
 
 async function createMergedImage(
-	primaryUrl: string,
-	secondaryUrl: string,
+  primaryUrl: string,
+  secondaryUrl: string,
 ): Promise<Blob> {
-	const canvas = document.createElement("canvas");
-	const ctx = canvas.getContext("2d");
-	if (!ctx) throw new Error("Could not get canvas context");
+  const canvas = document.createElement("canvas");
+  const ctx = canvas.getContext("2d");
+  if (!ctx) throw new Error("Could not get canvas context");
 
-	const primaryImg = await loadImage(primaryUrl);
-	const secondaryImg = await loadImage(secondaryUrl);
+  const primaryImg = await loadImage(primaryUrl);
+  const secondaryImg = await loadImage(secondaryUrl);
 
-	const primaryWidth = primaryImg.naturalWidth || primaryImg.width;
-	const primaryHeight = primaryImg.naturalHeight || primaryImg.height;
-	const pipWidth = Math.floor(primaryWidth / 3.5);
-	const pipHeight = Math.floor(pipWidth * (4 / 3));
-	const margin = Math.floor(primaryWidth / 40);
-	const borderRadius = Math.floor(primaryWidth / 50);
+  const primaryWidth = primaryImg.naturalWidth || primaryImg.width;
+  const primaryHeight = primaryImg.naturalHeight || primaryImg.height;
+  const pipWidth = Math.floor(primaryWidth / 3.5);
+  const pipHeight = Math.floor(pipWidth * (4 / 3));
+  const margin = Math.floor(primaryWidth / 40);
+  const borderRadius = Math.floor(primaryWidth / 50);
 
-	canvas.width = primaryWidth;
-	canvas.height = primaryHeight;
+  canvas.width = primaryWidth;
+  canvas.height = primaryHeight;
 
-	ctx.drawImage(primaryImg, 0, 0, primaryWidth, primaryHeight);
+  ctx.drawImage(primaryImg, 0, 0, primaryWidth, primaryHeight);
 
-	ctx.save();
+  ctx.save();
 
-	ctx.shadowColor = "rgba(0,0,0,0.4)";
-	ctx.shadowBlur = 15;
-	ctx.shadowOffsetX = 5;
-	ctx.shadowOffsetY = 5;
+  ctx.shadowColor = "rgba(0,0,0,0.4)";
+  ctx.shadowBlur = 15;
+  ctx.shadowOffsetX = 5;
+  ctx.shadowOffsetY = 5;
 
-	roundRect(ctx, margin, margin, pipWidth, pipHeight, borderRadius);
-	ctx.clip();
+  roundRect(ctx, margin, margin, pipWidth, pipHeight, borderRadius);
+  ctx.clip();
 
-	ctx.drawImage(secondaryImg, margin, margin, pipWidth, pipHeight);
+  ctx.drawImage(secondaryImg, margin, margin, pipWidth, pipHeight);
 
-	ctx.restore();
+  ctx.restore();
 
-	ctx.lineWidth = Math.max(4, primaryWidth / 200);
-	ctx.strokeStyle = "black";
-	roundRect(ctx, margin, margin, pipWidth, pipHeight, borderRadius);
-	ctx.stroke();
+  ctx.lineWidth = Math.max(4, primaryWidth / 200);
+  ctx.strokeStyle = "black";
+  roundRect(ctx, margin, margin, pipWidth, pipHeight, borderRadius);
+  ctx.stroke();
 
-	return new Promise((resolve, reject) => {
-		canvas.toBlob(
-			(blob) => {
-				if (blob) resolve(blob);
-				else reject(new Error("Canvas to Blob conversion failed"));
-			},
-			"image/jpeg",
-			0.95,
-		);
-	});
+  return new Promise((resolve, reject) => {
+    canvas.toBlob(
+      (blob) => {
+        if (blob) resolve(blob);
+        else reject(new Error("Canvas to Blob conversion failed"));
+      },
+      "image/jpeg",
+      0.95,
+    );
+  });
 }
 
 function loadImage(src: string): Promise<HTMLImageElement> {
-	return new Promise((resolve, reject) => {
-		const img = new Image();
-		img.crossOrigin = "anonymous";
-		img.onload = () => resolve(img);
-		img.onerror = (e) => reject(e);
-		img.src = src;
-	});
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.onload = () => resolve(img);
+    img.onerror = (e) => reject(e);
+    img.src = src;
+  });
 }
 
 function getPostDate(post: Post | Memory): Date {
-	const value =
-		"takenAt" in post && post.takenAt
-			? post.takenAt
-			: (post as Memory).takenTime;
-	const date = new Date(value || Date.now());
-	return Number.isNaN(date.getTime()) ? new Date() : date;
+  const value =
+    "takenAt" in post && post.takenAt
+      ? post.takenAt
+      : (post as Memory).takenTime;
+  const date = new Date(value || Date.now());
+  return Number.isNaN(date.getTime()) ? new Date() : date;
 }
 
 function getPostMetadata(post: Post | Memory) {
-	const date = getPostDate(post);
-	return {
-		id: post.id,
-		takenAt: date.toISOString(),
-		location: post.location ?? null,
-		caption: post.caption ?? null,
-		isMemory: Boolean("frontImage" in post || post.isMemory),
-	};
+  const date = getPostDate(post);
+  return {
+    id: post.id,
+    takenAt: date.toISOString(),
+    location: post.location ?? null,
+    caption: post.caption ?? null,
+    isMemory: Boolean("frontImage" in post || post.isMemory),
+  };
 }
 
 function formatExifDate(date: Date): string {
-	return format(date, "yyyy:MM:dd HH:mm:ss");
+  return format(date, "yyyy:MM:dd HH:mm:ss");
 }
 
 function mediaExtension(media: Media, fallback = "jpg"): string {
-	const mimeType = media.mimeType?.toLowerCase();
-	if (mimeType?.includes("webp")) return "webp";
-	if (mimeType?.includes("jpeg") || mimeType?.includes("jpg")) return "jpg";
-	if (mimeType?.includes("png")) return "png";
-	if (mimeType?.includes("heic")) return "heic";
-	if (mimeType?.includes("mp4")) return "mp4";
+  const mimeType = media.mimeType?.toLowerCase();
+  if (mimeType?.includes("webp")) return "webp";
+  if (mimeType?.includes("jpeg") || mimeType?.includes("jpg")) return "jpg";
+  if (mimeType?.includes("png")) return "png";
+  if (mimeType?.includes("heic")) return "heic";
+  if (mimeType?.includes("mp4")) return "mp4";
 
-	const extension = media.path.split(".").pop()?.toLowerCase();
-	return extension && extension.length <= 5 ? extension : fallback;
+  const extension = media.path.split(".").pop()?.toLowerCase();
+  return extension && extension.length <= 5 ? extension : fallback;
 }
 
 function isImageMedia(media: Media): boolean {
-	return media.mediaType === "image" || media.mimeType?.startsWith("image/");
+  return media.mediaType === "image" || media.mimeType?.startsWith("image/");
 }
 
 function assertImageMedia(media: Media, label: string) {
-	if (!isImageMedia(media)) {
-		throw new Error(`${label} media is not an image`);
-	}
+  if (!isImageMedia(media)) {
+    throw new Error(`${label} media is not an image`);
+  }
+}
+
+function isVideoMedia(media: Media): boolean {
+  return media.mediaType === "video" || media.mimeType?.startsWith("video/");
+}
+
+function assertVideoMedia(media: Media, label: string) {
+  if (!isVideoMedia(media)) {
+    throw new Error(`${label} media is not a video`);
+  }
+}
+
+function getPostMedia(post: Post | Memory): {
+  primaryMedia: Media;
+  secondaryMedia: Media;
+  btsMedia?: Media;
+} {
+  if ("primary" in post) {
+    const postAsPost = post as Post;
+    return {
+      primaryMedia: postAsPost.primary,
+      secondaryMedia: postAsPost.secondary,
+      btsMedia: postAsPost.btsMedia,
+    };
+  }
+
+  const postAsMemory = post as Memory;
+  return {
+    primaryMedia: postAsMemory.frontImage,
+    secondaryMedia: postAsMemory.backImage,
+    btsMedia: postAsMemory.btsMedia,
+  };
+}
+
+export function canDownloadVideo(
+  post: Post | Memory,
+  mediaMap: MediaMap,
+): boolean {
+  const { btsMedia } = getPostMedia(post);
+  return Boolean(btsMedia && mediaMap[btsMedia.path] && isVideoMedia(btsMedia));
+}
+
+export function downloadableVideoCount(
+  posts: (Post | Memory)[],
+  mediaMap: MediaMap,
+): number {
+  return posts.filter((post) => canDownloadVideo(post, mediaMap)).length;
 }
 
 function isJpegBlob(blob: Blob, filename: string): boolean {
-	const type = blob.type.toLowerCase();
-	return (
-		type.includes("jpeg") ||
-		type.includes("jpg") ||
-		/\.(jpe?g)$/i.test(filename)
-	);
+  const type = blob.type.toLowerCase();
+  return (
+    type.includes("jpeg") ||
+    type.includes("jpg") ||
+    /\.(jpe?g)$/i.test(filename)
+  );
 }
 
 function writeU16(view: DataView, offset: number, value: number) {
-	view.setUint16(offset, value, false);
+  view.setUint16(offset, value, false);
 }
 
 function writeU32(view: DataView, offset: number, value: number) {
-	view.setUint32(offset, value, false);
+  view.setUint32(offset, value, false);
 }
 
 function writeAscii(bytes: Uint8Array, offset: number, value: string) {
-	for (let i = 0; i < value.length; i++) {
-		bytes[offset + i] = value.charCodeAt(i);
-	}
+  for (let i = 0; i < value.length; i++) {
+    bytes[offset + i] = value.charCodeAt(i);
+  }
 }
 
 function writeIfdEntry(
-	view: DataView,
-	offset: number,
-	tag: number,
-	type: number,
-	count: number,
-	valueOrOffset: number,
+  view: DataView,
+  offset: number,
+  tag: number,
+  type: number,
+  count: number,
+  valueOrOffset: number,
 ) {
-	writeU16(view, offset, tag);
-	writeU16(view, offset + 2, type);
-	writeU32(view, offset + 4, count);
-	writeU32(view, offset + 8, valueOrOffset);
+  writeU16(view, offset, tag);
+  writeU16(view, offset + 2, type);
+  writeU32(view, offset + 4, count);
+  writeU32(view, offset + 8, valueOrOffset);
 }
 
 function coordinateToRationals(value: number): [number, number][] {
-	const absolute = Math.abs(value);
-	const degrees = Math.floor(absolute);
-	const minutesFloat = (absolute - degrees) * 60;
-	const minutes = Math.floor(minutesFloat);
-	const seconds = Math.round((minutesFloat - minutes) * 60 * 10000);
-	return [
-		[degrees, 1],
-		[minutes, 1],
-		[seconds, 10000],
-	];
+  const absolute = Math.abs(value);
+  const degrees = Math.floor(absolute);
+  const minutesFloat = (absolute - degrees) * 60;
+  const minutes = Math.floor(minutesFloat);
+  const seconds = Math.round((minutesFloat - minutes) * 60 * 10000);
+  return [
+    [degrees, 1],
+    [minutes, 1],
+    [seconds, 10000],
+  ];
 }
 
 function createExifSegment(post: Post | Memory): Uint8Array {
-	const metadata = getPostMetadata(post);
-	const dateString = `${formatExifDate(getPostDate(post))}\0`;
-	const hasLocation = Boolean(metadata.location);
-	const entryCount0 = hasLocation ? 3 : 2;
-	const exifIfdOffset = 8 + 2 + entryCount0 * 12 + 4;
-	const gpsIfdOffset = exifIfdOffset + 2 + 2 * 12 + 4 + dateString.length * 2;
-	const gpsDataOffset = gpsIfdOffset + (hasLocation ? 2 + 4 * 12 + 4 : 0);
-	const tiffLength = hasLocation ? gpsDataOffset + 48 : gpsIfdOffset;
-	const payloadLength = 6 + tiffLength;
-	const segment = new Uint8Array(4 + payloadLength);
-	const view = new DataView(segment.buffer);
+  const metadata = getPostMetadata(post);
+  const dateString = `${formatExifDate(getPostDate(post))}\0`;
+  const hasLocation = Boolean(metadata.location);
+  const entryCount0 = hasLocation ? 3 : 2;
+  const exifIfdOffset = 8 + 2 + entryCount0 * 12 + 4;
+  const gpsIfdOffset = exifIfdOffset + 2 + 2 * 12 + 4 + dateString.length * 2;
+  const gpsDataOffset = gpsIfdOffset + (hasLocation ? 2 + 4 * 12 + 4 : 0);
+  const tiffLength = hasLocation ? gpsDataOffset + 48 : gpsIfdOffset;
+  const payloadLength = 6 + tiffLength;
+  const segment = new Uint8Array(4 + payloadLength);
+  const view = new DataView(segment.buffer);
 
-	segment[0] = 0xff;
-	segment[1] = 0xe1;
-	writeU16(view, 2, payloadLength + 2);
-	writeAscii(segment, 4, "Exif\0\0");
+  segment[0] = 0xff;
+  segment[1] = 0xe1;
+  writeU16(view, 2, payloadLength + 2);
+  writeAscii(segment, 4, "Exif\0\0");
 
-	const tiffStart = 10;
-	writeAscii(segment, tiffStart, "MM");
-	writeU16(view, tiffStart + 2, 42);
-	writeU32(view, tiffStart + 4, 8);
+  const tiffStart = 10;
+  writeAscii(segment, tiffStart, "MM");
+  writeU16(view, tiffStart + 2, 42);
+  writeU32(view, tiffStart + 4, 8);
 
-	let entryOffset = tiffStart + 10;
-	writeU16(view, tiffStart + 8, entryCount0);
-	writeIfdEntry(
-		view,
-		entryOffset,
-		0x0132,
-		2,
-		dateString.length,
-		exifIfdOffset + 2 + 2 * 12 + 4,
-	);
-	entryOffset += 12;
-	writeIfdEntry(view, entryOffset, 0x8769, 4, 1, exifIfdOffset);
-	entryOffset += 12;
-	if (hasLocation) {
-		writeIfdEntry(view, entryOffset, 0x8825, 4, 1, gpsIfdOffset);
-	}
-	writeU32(view, tiffStart + 10 + entryCount0 * 12, 0);
+  let entryOffset = tiffStart + 10;
+  writeU16(view, tiffStart + 8, entryCount0);
+  writeIfdEntry(
+    view,
+    entryOffset,
+    0x0132,
+    2,
+    dateString.length,
+    exifIfdOffset + 2 + 2 * 12 + 4,
+  );
+  entryOffset += 12;
+  writeIfdEntry(view, entryOffset, 0x8769, 4, 1, exifIfdOffset);
+  entryOffset += 12;
+  if (hasLocation) {
+    writeIfdEntry(view, entryOffset, 0x8825, 4, 1, gpsIfdOffset);
+  }
+  writeU32(view, tiffStart + 10 + entryCount0 * 12, 0);
 
-	const exifStart = tiffStart + exifIfdOffset;
-	const dateOffset = exifIfdOffset + 2 + 2 * 12 + 4;
-	writeU16(view, exifStart, 2);
-	writeIfdEntry(view, exifStart + 2, 0x9003, 2, dateString.length, dateOffset);
-	writeIfdEntry(
-		view,
-		exifStart + 14,
-		0x9004,
-		2,
-		dateString.length,
-		dateOffset + dateString.length,
-	);
-	writeU32(view, exifStart + 26, 0);
-	writeAscii(segment, tiffStart + dateOffset, dateString);
-	writeAscii(segment, tiffStart + dateOffset + dateString.length, dateString);
+  const exifStart = tiffStart + exifIfdOffset;
+  const dateOffset = exifIfdOffset + 2 + 2 * 12 + 4;
+  writeU16(view, exifStart, 2);
+  writeIfdEntry(view, exifStart + 2, 0x9003, 2, dateString.length, dateOffset);
+  writeIfdEntry(
+    view,
+    exifStart + 14,
+    0x9004,
+    2,
+    dateString.length,
+    dateOffset + dateString.length,
+  );
+  writeU32(view, exifStart + 26, 0);
+  writeAscii(segment, tiffStart + dateOffset, dateString);
+  writeAscii(segment, tiffStart + dateOffset + dateString.length, dateString);
 
-	if (metadata.location) {
-		const gpsStart = tiffStart + gpsIfdOffset;
-		const latitude = coordinateToRationals(metadata.location.latitude);
-		const longitude = coordinateToRationals(metadata.location.longitude);
-		const latitudeOffset = gpsDataOffset;
-		const longitudeOffset = gpsDataOffset + 24;
-		writeU16(view, gpsStart, 4);
-		writeIfdEntry(
-			view,
-			gpsStart + 2,
-			0x0001,
-			2,
-			2,
-			metadata.location.latitude >= 0 ? 0x4e000000 : 0x53000000,
-		);
-		writeIfdEntry(view, gpsStart + 14, 0x0002, 5, 3, latitudeOffset);
-		writeIfdEntry(
-			view,
-			gpsStart + 26,
-			0x0003,
-			2,
-			2,
-			metadata.location.longitude >= 0 ? 0x45000000 : 0x57000000,
-		);
-		writeIfdEntry(view, gpsStart + 38, 0x0004, 5, 3, longitudeOffset);
-		writeU32(view, gpsStart + 50, 0);
+  if (metadata.location) {
+    const gpsStart = tiffStart + gpsIfdOffset;
+    const latitude = coordinateToRationals(metadata.location.latitude);
+    const longitude = coordinateToRationals(metadata.location.longitude);
+    const latitudeOffset = gpsDataOffset;
+    const longitudeOffset = gpsDataOffset + 24;
+    writeU16(view, gpsStart, 4);
+    writeIfdEntry(
+      view,
+      gpsStart + 2,
+      0x0001,
+      2,
+      2,
+      metadata.location.latitude >= 0 ? 0x4e000000 : 0x53000000,
+    );
+    writeIfdEntry(view, gpsStart + 14, 0x0002, 5, 3, latitudeOffset);
+    writeIfdEntry(
+      view,
+      gpsStart + 26,
+      0x0003,
+      2,
+      2,
+      metadata.location.longitude >= 0 ? 0x45000000 : 0x57000000,
+    );
+    writeIfdEntry(view, gpsStart + 38, 0x0004, 5, 3, longitudeOffset);
+    writeU32(view, gpsStart + 50, 0);
 
-		[...latitude, ...longitude].forEach(([numerator, denominator], index) => {
-			const offset = tiffStart + gpsDataOffset + index * 8;
-			writeU32(view, offset, numerator);
-			writeU32(view, offset + 4, denominator);
-		});
-	}
+    [...latitude, ...longitude].forEach(([numerator, denominator], index) => {
+      const offset = tiffStart + gpsDataOffset + index * 8;
+      writeU32(view, offset, numerator);
+      writeU32(view, offset + 4, denominator);
+    });
+  }
 
-	return segment;
+  return segment;
 }
 
 async function withEmbeddedJpegMetadata(
-	blob: Blob,
-	filename: string,
-	post: Post | Memory,
+  blob: Blob,
+  filename: string,
+  post: Post | Memory,
 ): Promise<Blob> {
-	if (!isJpegBlob(blob, filename)) return blob;
+  if (!isJpegBlob(blob, filename)) return blob;
 
-	const bytes = new Uint8Array(await blob.arrayBuffer());
-	if (bytes[0] !== 0xff || bytes[1] !== 0xd8) return blob;
+  const bytes = new Uint8Array(await blob.arrayBuffer());
+  if (bytes[0] !== 0xff || bytes[1] !== 0xd8) return blob;
 
-	const exifSegment = createExifSegment(post);
-	const output = new Uint8Array(bytes.length + exifSegment.length);
-	output.set(bytes.slice(0, 2), 0);
-	output.set(exifSegment, 2);
-	output.set(bytes.slice(2), 2 + exifSegment.length);
-	return new Blob([output], { type: blob.type || "image/jpeg" });
+  const exifSegment = createExifSegment(post);
+  const output = new Uint8Array(bytes.length + exifSegment.length);
+  output.set(bytes.slice(0, 2), 0);
+  output.set(exifSegment, 2);
+  output.set(bytes.slice(2), 2 + exifSegment.length);
+  return new Blob([output], { type: blob.type || "image/jpeg" });
 }
 
 function createXmpSidecar(post: Post | Memory): string {
-	const metadata = getPostMetadata(post);
-	const latitude = metadata.location?.latitude ?? "";
-	const longitude = metadata.location?.longitude ?? "";
-	return `<?xml version="1.0" encoding="UTF-8"?>
+  const metadata = getPostMetadata(post);
+  const latitude = metadata.location?.latitude ?? "";
+  const longitude = metadata.location?.longitude ?? "";
+  return `<?xml version="1.0" encoding="UTF-8"?>
 <x:xmpmeta xmlns:x="adobe:ns:meta/">
   <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
     <rdf:Description
@@ -326,167 +378,172 @@ function createXmpSidecar(post: Post | Memory): string {
 }
 
 async function prepareMediaBlob(
-	blob: Blob,
-	filename: string,
-	post: Post | Memory,
+  blob: Blob,
+  filename: string,
+  post: Post | Memory,
 ): Promise<Blob> {
-	return withEmbeddedJpegMetadata(blob, filename, post);
+  return withEmbeddedJpegMetadata(blob, filename, post);
 }
 
 function needsXmpSidecar(blob: Blob, filename: string): boolean {
-	return !isJpegBlob(blob, filename);
+  return !isJpegBlob(blob, filename);
 }
 
 function triggerDownload(blob: Blob, filename: string, lastModified?: Date) {
-	const downloadable = lastModified
-		? new File([blob], filename, {
-				type: blob.type || "application/octet-stream",
-				lastModified: lastModified.getTime(),
-			})
-		: blob;
-	const url = URL.createObjectURL(downloadable);
-	const a = document.createElement("a");
-	a.href = url;
-	a.download = filename;
-	document.body.appendChild(a);
-	a.click();
-	document.body.removeChild(a);
-	URL.revokeObjectURL(url);
+  const downloadable = lastModified
+    ? new File([blob], filename, {
+        type: blob.type || "application/octet-stream",
+        lastModified: lastModified.getTime(),
+      })
+    : blob;
+  const url = URL.createObjectURL(downloadable);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
 }
 
 export async function downloadPosts(
-	posts: (Post | Memory)[],
-	mediaMap: MediaMap,
-	type: DownloadType,
-	zipName: string,
+  posts: (Post | Memory)[],
+  mediaMap: MediaMap,
+  type: DownloadType,
+  zipName: string,
 ) {
-	if (posts.length === 1 && type !== "both") {
-		const post = posts[0];
-		let primaryMedia: Media;
-		let secondaryMedia: Media;
+  if (posts.length === 1 && type !== "both") {
+    const post = posts[0];
+    const { primaryMedia, secondaryMedia, btsMedia } = getPostMedia(post);
 
-		if ("primary" in post) {
-			const postAsPost = post as Post;
-			primaryMedia = postAsPost.primary;
-			secondaryMedia = postAsPost.secondary;
-		} else {
-			const postAsMemory = post as Memory;
-			primaryMedia = postAsMemory.frontImage;
-			secondaryMedia = postAsMemory.backImage;
-		}
+    if (!primaryMedia || !secondaryMedia) {
+      throw new Error("Missing required media for download");
+    }
 
-		if (!primaryMedia || !secondaryMedia) {
-			throw new Error("Missing required media for download");
-		}
+    const primaryUrl = mediaMap[primaryMedia.path];
+    const secondaryUrl = mediaMap[secondaryMedia.path];
 
-		const primaryUrl = mediaMap[primaryMedia.path];
-		const secondaryUrl = mediaMap[secondaryMedia.path];
+    if (type === "primary") {
+      assertImageMedia(primaryMedia, "Primary");
+      const filename = `${zipName}-primary.${mediaExtension(primaryMedia)}`;
+      const blob = await prepareMediaBlob(
+        await getBlobFromUrl(primaryUrl),
+        filename,
+        post,
+      );
+      triggerDownload(blob, filename, getPostDate(post));
+    } else if (type === "secondary") {
+      assertImageMedia(secondaryMedia, "Secondary");
+      const filename = `${zipName}-secondary.${mediaExtension(secondaryMedia)}`;
+      const blob = await prepareMediaBlob(
+        await getBlobFromUrl(secondaryUrl),
+        filename,
+        post,
+      );
+      triggerDownload(blob, filename, getPostDate(post));
+    } else if (type === "merged") {
+      assertImageMedia(primaryMedia, "Primary");
+      assertImageMedia(secondaryMedia, "Secondary");
+      const blob = await prepareMediaBlob(
+        await createMergedImage(primaryUrl, secondaryUrl),
+        `${zipName}-merged.jpg`,
+        post,
+      );
+      triggerDownload(blob, `${zipName}-merged.jpg`, getPostDate(post));
+    } else if (type === "video") {
+      if (!btsMedia || !mediaMap[btsMedia.path]) {
+        throw new Error("No video is available for this post");
+      }
+      assertVideoMedia(btsMedia, "Video");
+      const filename = `${zipName}-video.${mediaExtension(btsMedia, "mp4")}`;
+      const blob = await getBlobFromUrl(mediaMap[btsMedia.path]);
+      triggerDownload(blob, filename, getPostDate(post));
+    }
+  } else {
+    const zip = new JSZip();
+    if (type === "video" && downloadableVideoCount(posts, mediaMap) === 0) {
+      throw new Error("No videos are available for this selection");
+    }
 
-		if (type === "primary") {
-			assertImageMedia(primaryMedia, "Primary");
-			const filename = `${zipName}-primary.${mediaExtension(primaryMedia)}`;
-			const blob = await prepareMediaBlob(
-				await getBlobFromUrl(primaryUrl),
-				filename,
-				post,
-			);
-			triggerDownload(blob, filename, getPostDate(post));
-		} else if (type === "secondary") {
-			assertImageMedia(secondaryMedia, "Secondary");
-			const filename = `${zipName}-secondary.${mediaExtension(secondaryMedia)}`;
-			const blob = await prepareMediaBlob(
-				await getBlobFromUrl(secondaryUrl),
-				filename,
-				post,
-			);
-			triggerDownload(blob, filename, getPostDate(post));
-		} else if (type === "merged") {
-			assertImageMedia(primaryMedia, "Primary");
-			assertImageMedia(secondaryMedia, "Secondary");
-			const blob = await prepareMediaBlob(
-				await createMergedImage(primaryUrl, secondaryUrl),
-				`${zipName}-merged.jpg`,
-				post,
-			);
-			triggerDownload(blob, `${zipName}-merged.jpg`, getPostDate(post));
-		}
-	} else {
-		const zip = new JSZip();
-		for (const post of posts) {
-			let primaryMedia: Media;
-			let secondaryMedia: Media;
+    for (const post of posts) {
+      const { primaryMedia, secondaryMedia, btsMedia } = getPostMedia(post);
 
-			if ("primary" in post) {
-				const postAsPost = post as Post;
-				primaryMedia = postAsPost.primary;
-				secondaryMedia = postAsPost.secondary;
-			} else {
-				const postAsMemory = post as Memory;
-				primaryMedia = postAsMemory.frontImage;
-				secondaryMedia = postAsMemory.backImage;
-			}
+      if (!primaryMedia || !secondaryMedia) {
+        continue;
+      }
 
-			if (!primaryMedia || !secondaryMedia) {
-				continue;
-			}
+      if (type === "video" && !canDownloadVideo(post, mediaMap)) {
+        continue;
+      }
 
-			const dateStr = format(getPostDate(post), "yyyy-MM-dd-HH-mm-ss");
-			const postFolder = zip.folder(dateStr);
-			const fileDate = getPostDate(post);
-			postFolder?.file(
-				`metadata.json`,
-				JSON.stringify(getPostMetadata(post), null, 2),
-				{ date: fileDate },
-			);
+      const dateStr = format(getPostDate(post), "yyyy-MM-dd-HH-mm-ss");
+      const postFolder = zip.folder(dateStr);
+      const fileDate = getPostDate(post);
+      postFolder?.file(
+        `metadata.json`,
+        JSON.stringify(getPostMetadata(post), null, 2),
+        { date: fileDate },
+      );
 
-			const primaryBlob = await getBlobFromUrl(mediaMap[primaryMedia.path]);
-			const secondaryBlob = await getBlobFromUrl(mediaMap[secondaryMedia.path]);
-			const primaryFilename = `primary.${mediaExtension(primaryMedia)}`;
-			const secondaryFilename = `secondary.${mediaExtension(secondaryMedia)}`;
+      if (type === "video" && btsMedia) {
+        assertVideoMedia(btsMedia, "Video");
+        const videoBlob = await getBlobFromUrl(mediaMap[btsMedia.path]);
+        const videoFilename = `video.${mediaExtension(btsMedia, "mp4")}`;
+        postFolder?.file(videoFilename, videoBlob, { date: fileDate });
+        postFolder?.file(`video.xmp`, createXmpSidecar(post), {
+          date: fileDate,
+        });
+        continue;
+      }
 
-			if (type === "primary" || type === "both") {
-				assertImageMedia(primaryMedia, "Primary");
-				const preparedBlob = await prepareMediaBlob(
-					primaryBlob,
-					primaryFilename,
-					post,
-				);
-				postFolder?.file(primaryFilename, preparedBlob, { date: fileDate });
-				if (needsXmpSidecar(primaryBlob, primaryFilename)) {
-					postFolder?.file(`primary.xmp`, createXmpSidecar(post), {
-						date: fileDate,
-					});
-				}
-			}
-			if (type === "secondary" || type === "both") {
-				assertImageMedia(secondaryMedia, "Secondary");
-				const preparedBlob = await prepareMediaBlob(
-					secondaryBlob,
-					secondaryFilename,
-					post,
-				);
-				postFolder?.file(secondaryFilename, preparedBlob, { date: fileDate });
-				if (needsXmpSidecar(secondaryBlob, secondaryFilename)) {
-					postFolder?.file(`secondary.xmp`, createXmpSidecar(post), {
-						date: fileDate,
-					});
-				}
-			}
-			if (type === "merged") {
-				assertImageMedia(primaryMedia, "Primary");
-				assertImageMedia(secondaryMedia, "Secondary");
-				const mergedBlob = await prepareMediaBlob(
-					await createMergedImage(
-						mediaMap[primaryMedia.path],
-						mediaMap[secondaryMedia.path],
-					),
-					"merged.jpg",
-					post,
-				);
-				postFolder?.file(`merged.jpg`, mergedBlob, { date: fileDate });
-			}
-		}
-		const zipBlob = await zip.generateAsync({ type: "blob" });
-		triggerDownload(zipBlob, `${zipName}.zip`);
-	}
+      const primaryBlob = await getBlobFromUrl(mediaMap[primaryMedia.path]);
+      const secondaryBlob = await getBlobFromUrl(mediaMap[secondaryMedia.path]);
+      const primaryFilename = `primary.${mediaExtension(primaryMedia)}`;
+      const secondaryFilename = `secondary.${mediaExtension(secondaryMedia)}`;
+
+      if (type === "primary" || type === "both") {
+        assertImageMedia(primaryMedia, "Primary");
+        const preparedBlob = await prepareMediaBlob(
+          primaryBlob,
+          primaryFilename,
+          post,
+        );
+        postFolder?.file(primaryFilename, preparedBlob, { date: fileDate });
+        if (needsXmpSidecar(primaryBlob, primaryFilename)) {
+          postFolder?.file(`primary.xmp`, createXmpSidecar(post), {
+            date: fileDate,
+          });
+        }
+      }
+      if (type === "secondary" || type === "both") {
+        assertImageMedia(secondaryMedia, "Secondary");
+        const preparedBlob = await prepareMediaBlob(
+          secondaryBlob,
+          secondaryFilename,
+          post,
+        );
+        postFolder?.file(secondaryFilename, preparedBlob, { date: fileDate });
+        if (needsXmpSidecar(secondaryBlob, secondaryFilename)) {
+          postFolder?.file(`secondary.xmp`, createXmpSidecar(post), {
+            date: fileDate,
+          });
+        }
+      }
+      if (type === "merged") {
+        assertImageMedia(primaryMedia, "Primary");
+        assertImageMedia(secondaryMedia, "Secondary");
+        const mergedBlob = await prepareMediaBlob(
+          await createMergedImage(
+            mediaMap[primaryMedia.path],
+            mediaMap[secondaryMedia.path],
+          ),
+          "merged.jpg",
+          post,
+        );
+        postFolder?.file(`merged.jpg`, mergedBlob, { date: fileDate });
+      }
+    }
+    const zipBlob = await zip.generateAsync({ type: "blob" });
+    triggerDownload(zipBlob, `${zipName}.zip`);
+  }
 }
