@@ -11,14 +11,6 @@ export default defineConfig({
 			target: "es2020",
 			minify: "esbuild",
 			sourcemap: false,
-			rollupOptions: {
-				output: {
-					manualChunks: {
-						vendor: ["svelte", "@lucide/svelte"],
-						utils: ["date-fns", "jszip", "pako"],
-					},
-				},
-			},
 		},
 		optimizeDeps: {
 			exclude: ["@types/pako"],
