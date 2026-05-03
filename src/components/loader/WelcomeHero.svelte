@@ -1,5 +1,6 @@
 <script lang="ts">
 import { ExternalLink } from "@lucide/svelte";
+import { APP_VERSION } from "@/lib/version";
 </script>
 
 <header class="text-center mb-12">
@@ -7,6 +8,9 @@ import { ExternalLink } from "@lucide/svelte";
   <h1 class="text-4xl md:text-5xl font-bold tracking-tight">
     BeReal GDPR Files Explorer
   </h1>
+  <div class="mt-3">
+    <span class="badge badge-primary badge-outline">v{APP_VERSION}</span>
+  </div>
   <p class="max-w-2xl mt-4 text-lg opacity-70 mx-auto">
     A privacy-focused tool to explore and analyze your BeReal GDPR data export.
     View your posts, memories, friends, and more.

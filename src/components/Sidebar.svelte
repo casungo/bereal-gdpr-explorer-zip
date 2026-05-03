@@ -16,6 +16,7 @@ import {
 	LogOut,
 } from "@lucide/svelte";
 import ThemeToggle from "@/components/ui/ThemeToggle.svelte";
+import { APP_VERSION } from "@/lib/version";
 
 // Re-define TABS here or pass them in? Passing them in is cleaner for dumb components,
 // but defining them here makes Sidebar self-contained if it's specific to this app.
@@ -137,6 +138,7 @@ const mainTabs = TABS.filter((t) => t.id !== "overview");
             class="text-xs opacity-70"
           >
             Explorer
+            v{APP_VERSION}
           </p>
         </div>
       </div>
