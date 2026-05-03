@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { canDownloadVideo, downloadableVideoCount } from "./download";
+import {
+  canDownloadVideo,
+  detectedMediaExtension,
+  downloadableVideoCount,
+} from "./download";
 import type { Media, Memory, Post } from "./types";
 
 const primaryImage: Media = {
@@ -103,5 +107,36 @@ describe("download video rules", () => {
     expect(
       downloadableVideoCount(posts, { [btsVideo.path]: "blob:video" }),
     ).toBe(2);
+  });
+});
+
+describe("media extension detection", () => {
+  it("uses actual WebP bytes even when export metadata says JPEG", async () => {
+    const mislabeledWebp = {
+      ...primaryImage,
+      path: "Photos/primary.jpg",
+      mimeType: "image/jpeg",
+    };
+    const webpHeader = new Uint8Array([
+      0x52, 0x49, 0x46, 0x46, 0x18, 0x00, 0x00, 0x00, 0x57, 0x45, 0x42, 0x50,
+      0x56, 0x50, 0x38, 0x20,
+    ]);
+
+    await expect(
+      detectedMediaExtension(mislabeledWebp, new Blob([webpHeader])),
+    ).resolves.toBe("webp");
+  });
+
+  it("uses actual JPEG bytes even when the path is misleading", async () => {
+    const mislabeledJpeg = {
+      ...primaryImage,
+      path: "Photos/primary.webp",
+      mimeType: "image/webp",
+    };
+    const jpegHeader = new Uint8Array([0xff, 0xd8, 0xff, 0xe0]);
+
+    await expect(
+      detectedMediaExtension(mislabeledJpeg, new Blob([jpegHeader])),
+    ).resolves.toBe("jpg");
   });
 });

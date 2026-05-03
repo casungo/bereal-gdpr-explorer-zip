@@ -253,6 +253,54 @@ function isJpegBlob(blob: Blob, filename: string): boolean {
   );
 }
 
+async function readBlobHeader(blob: Blob, length = 16): Promise<Uint8Array> {
+  return new Uint8Array(await blob.slice(0, length).arrayBuffer());
+}
+
+function sniffMediaExtensionFromHeader(header: Uint8Array): string | null {
+  if (header[0] === 0xff && header[1] === 0xd8) return "jpg";
+  if (
+    header[0] === 0x89 &&
+    header[1] === 0x50 &&
+    header[2] === 0x4e &&
+    header[3] === 0x47
+  ) {
+    return "png";
+  }
+  if (
+    header[0] === 0x52 &&
+    header[1] === 0x49 &&
+    header[2] === 0x46 &&
+    header[3] === 0x46 &&
+    header[8] === 0x57 &&
+    header[9] === 0x45 &&
+    header[10] === 0x42 &&
+    header[11] === 0x50
+  ) {
+    return "webp";
+  }
+  if (
+    header[4] === 0x66 &&
+    header[5] === 0x74 &&
+    header[6] === 0x79 &&
+    header[7] === 0x70
+  ) {
+    return "mp4";
+  }
+  return null;
+}
+
+export async function detectedMediaExtension(
+  media: Media,
+  blob: Blob,
+  fallback = "jpg",
+): Promise<string> {
+  const detectedExtension = sniffMediaExtensionFromHeader(
+    await readBlobHeader(blob),
+  );
+  return detectedExtension ?? mediaExtension(media, fallback);
+}
+
 function writeU16(view: DataView, offset: number, value: number) {
   view.setUint16(offset, value, false);
 }
@@ -434,8 +482,9 @@ async function prepareMediaBlob(
   return withEmbeddedJpegMetadata(blob, filename, post);
 }
 
-function needsXmpSidecar(blob: Blob, filename: string): boolean {
-  return !isJpegBlob(blob, filename);
+async function needsXmpSidecar(blob: Blob): Promise<boolean> {
+  const extension = sniffMediaExtensionFromHeader(await readBlobHeader(blob));
+  return extension !== "jpg";
 }
 
 function triggerDownload(blob: Blob, filename: string, lastModified?: Date) {
@@ -484,21 +533,15 @@ export async function downloadPosts(
 
     if (request === "primary") {
       assertImageMedia(primaryMedia, "Primary");
-      const filename = `${zipName}-primary.${mediaExtension(primaryMedia)}`;
-      const blob = await prepareMediaBlob(
-        await getBlobFromUrl(primaryUrl),
-        filename,
-        post,
-      );
+      const sourceBlob = await getBlobFromUrl(primaryUrl);
+      const filename = `${zipName}-primary.${await detectedMediaExtension(primaryMedia, sourceBlob)}`;
+      const blob = await prepareMediaBlob(sourceBlob, filename, post);
       triggerDownload(blob, filename, getPostDate(post));
     } else if (request === "secondary") {
       assertImageMedia(secondaryMedia, "Secondary");
-      const filename = `${zipName}-secondary.${mediaExtension(secondaryMedia)}`;
-      const blob = await prepareMediaBlob(
-        await getBlobFromUrl(secondaryUrl),
-        filename,
-        post,
-      );
+      const sourceBlob = await getBlobFromUrl(secondaryUrl);
+      const filename = `${zipName}-secondary.${await detectedMediaExtension(secondaryMedia, sourceBlob)}`;
+      const blob = await prepareMediaBlob(sourceBlob, filename, post);
       triggerDownload(blob, filename, getPostDate(post));
     } else if (request === "merged") {
       assertImageMedia(primaryMedia, "Primary");
@@ -514,8 +557,8 @@ export async function downloadPosts(
         throw new Error("No video is available for this post");
       }
       assertVideoMedia(btsMedia, "Video");
-      const filename = `${zipName}-video.${mediaExtension(btsMedia, "mp4")}`;
       const blob = await getBlobFromUrl(mediaMap[btsMedia.path]);
+      const filename = `${zipName}-video.${await detectedMediaExtension(btsMedia, blob, "mp4")}`;
       triggerDownload(blob, filename, getPostDate(post));
     }
   } else {
@@ -550,7 +593,7 @@ export async function downloadPosts(
       if (selection.video && btsMedia && canDownloadVideo(post, mediaMap)) {
         assertVideoMedia(btsMedia, "Video");
         const videoBlob = await getBlobFromUrl(mediaMap[btsMedia.path]);
-        const videoFilename = `video.${mediaExtension(btsMedia, "mp4")}`;
+        const videoFilename = `video.${await detectedMediaExtension(btsMedia, videoBlob, "mp4")}`;
         postFolder?.file(videoFilename, videoBlob, { date: fileDate });
         postFolder?.file(`video.xmp`, createXmpSidecar(post), {
           date: fileDate,
@@ -560,8 +603,6 @@ export async function downloadPosts(
         }
       }
 
-      const primaryFilename = `primary.${mediaExtension(primaryMedia)}`;
-      const secondaryFilename = `secondary.${mediaExtension(secondaryMedia)}`;
       const needsPrimaryBlob = selection.primary;
       const needsSecondaryBlob = selection.secondary;
       const needsMerged = selection.merged;
@@ -574,13 +615,14 @@ export async function downloadPosts(
 
       if (selection.primary && primaryBlob) {
         assertImageMedia(primaryMedia, "Primary");
+        const primaryFilename = `primary.${await detectedMediaExtension(primaryMedia, primaryBlob)}`;
         const preparedBlob = await prepareMediaBlob(
           primaryBlob,
           primaryFilename,
           post,
         );
         postFolder?.file(primaryFilename, preparedBlob, { date: fileDate });
-        if (needsXmpSidecar(primaryBlob, primaryFilename)) {
+        if (await needsXmpSidecar(primaryBlob)) {
           postFolder?.file(`primary.xmp`, createXmpSidecar(post), {
             date: fileDate,
           });
@@ -588,13 +630,14 @@ export async function downloadPosts(
       }
       if (selection.secondary && secondaryBlob) {
         assertImageMedia(secondaryMedia, "Secondary");
+        const secondaryFilename = `secondary.${await detectedMediaExtension(secondaryMedia, secondaryBlob)}`;
         const preparedBlob = await prepareMediaBlob(
           secondaryBlob,
           secondaryFilename,
           post,
         );
         postFolder?.file(secondaryFilename, preparedBlob, { date: fileDate });
-        if (needsXmpSidecar(secondaryBlob, secondaryFilename)) {
+        if (await needsXmpSidecar(secondaryBlob)) {
           postFolder?.file(`secondary.xmp`, createXmpSidecar(post), {
             date: fileDate,
           });
