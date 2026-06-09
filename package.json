@@ -1,35 +1,37 @@
 {
-  "name": "bereal-gdpr-explorer-zip",
-  "type": "module",
-  "version": "2.0.0",
-  "scripts": {
-    "astro": "astro",
-    "dev": "astro dev",
-    "build": "astro build",
-    "preview": "astro preview",
-    "check": "astro check",
-    "format": "prettier --write \"src/**/*.{ts,svelte,astro}\" \"*.{json,js,ts,mjs}\"",
-    "test": "vitest run"
-  },
-  "dependencies": {
-    "@astrojs/check": "^0.9.9",
-    "@astrojs/svelte": "^8.1.0",
-    "@lucide/svelte": "^1.14.0",
-    "@tailwindcss/vite": "^4.2.4",
-    "@types/pako": "^2.0.4",
-    "astro": "^6.2.1",
-    "daisyui": "^5.5.19",
-    "date-fns": "^4.1.0",
-    "jszip": "^3.10.1",
-    "pako": "^2.1.0",
-    "svelte": "^5.55.5",
-    "tailwindcss": "^4.2.4",
-    "typescript": "^6.0.3",
-    "wrangler": "^4.87.0"
-  },
-  "devDependencies": {
-    "prettier": "^3.8.3",
-    "prettier-plugin-svelte": "^3.5.1",
-    "vitest": "^4.1.5"
-  }
+	"name": "bereal-gdpr-explorer-zip",
+	"type": "module",
+	"version": "2.0.0",
+	"scripts": {
+		"astro": "astro",
+		"dev": "astro dev",
+		"dev:lan": "astro dev --host 0.0.0.0",
+		"build": "astro build",
+		"preview": "astro preview",
+		"preview:lan": "astro preview --host 0.0.0.0",
+		"check": "astro check",
+		"format": "prettier --write \"src/**/*.{ts,svelte,astro}\" \"*.{json,js,ts,mjs}\"",
+		"test": "vitest run"
+	},
+	"dependencies": {
+		"@astrojs/check": "^0.9.9",
+		"@astrojs/svelte": "^8.1.0",
+		"@lucide/svelte": "^1.14.0",
+		"@tailwindcss/vite": "^4.2.4",
+		"@types/pako": "^2.0.4",
+		"astro": "^6.2.1",
+		"daisyui": "^5.5.19",
+		"date-fns": "^4.1.0",
+		"jszip": "^3.10.1",
+		"pako": "^2.1.0",
+		"svelte": "^5.55.5",
+		"tailwindcss": "^4.2.4",
+		"typescript": "^6.0.3",
+		"wrangler": "^4.87.0"
+	},
+	"devDependencies": {
+		"prettier": "^3.8.3",
+		"prettier-plugin-svelte": "^3.5.1",
+		"vitest": "^4.1.5"
+	}
 }

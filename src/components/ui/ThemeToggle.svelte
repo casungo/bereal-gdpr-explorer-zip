@@ -1,40 +1,34 @@
-<script
-  lang="ts"
->
-import { Sun, Moon } from "@lucide/svelte";
-import { themeStore } from "@/lib/stores/theme";
-import { onMount } from "svelte";
+<script lang="ts">
+	import { Sun, Moon } from "@lucide/svelte";
+	import { themeStore } from "@/lib/stores/theme";
+	import { onMount } from "svelte";
 
-let isDark = $state(false);
+	let isDark = $state(false);
 
-onMount(() => {
-	themeStore.init();
+	onMount(() => {
+		themeStore.init();
 
-	const unsubscribe = themeStore.subscribe((theme) => {
-		isDark = theme === "halloween";
+		const unsubscribe = themeStore.subscribe((theme) => {
+			isDark = theme === "bereal-dark";
+		});
+
+		return unsubscribe;
 	});
 
-	return unsubscribe;
-});
-
-function toggleTheme() {
-	themeStore.toggle();
-}
+	function toggleTheme() {
+		themeStore.toggle();
+	}
 </script>
 
 <button
-  class="btn btn-ghost btn-circle"
-  onclick={toggleTheme}
-  aria-label="Toggle theme"
-  title="Toggle between light and dark mode"
+	class="btn btn-ghost btn-circle"
+	onclick={toggleTheme}
+	aria-label="Toggle theme"
+	title="Toggle between light and dark mode"
 >
-  {#if isDark}
-    <Sun
-      class="w-5 h-5"
-    />
-  {:else}
-    <Moon
-      class="w-5 h-5"
-    />
-  {/if}
+	{#if isDark}
+		<Sun class="w-5 h-5" />
+	{:else}
+		<Moon class="w-5 h-5" />
+	{/if}
 </button>

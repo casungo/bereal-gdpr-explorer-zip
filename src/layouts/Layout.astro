@@ -10,7 +10,7 @@ const { title } = Astro.props;
 ---
 
 <!doctype html>
-<html lang="en" data-theme="light">
+<html lang="en" data-theme="bereal-light">
 	<head>
 		<meta charset="UTF-8" />
 		<meta
@@ -26,11 +26,20 @@ const { title } = Astro.props;
 		<slot />
 
 		<script>
+			const savedTheme = localStorage.getItem("theme");
 			const theme =
-				localStorage.getItem("theme") ||
-				(window.matchMedia("(prefers-color-scheme: dark)").matches
-					? "halloween"
-					: "autumn");
+				savedTheme === "bereal-dark" ||
+				savedTheme === "halloween" ||
+				savedTheme === "dark"
+					? "bereal-dark"
+					: savedTheme === "bereal-light" ||
+							savedTheme === "autumn" ||
+							savedTheme === "light"
+						? "bereal-light"
+						: window.matchMedia("(prefers-color-scheme: dark)").matches
+							? "bereal-dark"
+							: "bereal-light";
+			localStorage.setItem("theme", theme);
 			document.documentElement.setAttribute("data-theme", theme);
 		</script>
 	</body>

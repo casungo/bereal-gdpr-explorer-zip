@@ -29,6 +29,10 @@ async function readFileAsArrayBuffer(file: File): Promise<ArrayBuffer> {
 		throw new Error(`Invalid file type. Expected .zip or .gz files.`);
 	}
 
+	if (typeof file.arrayBuffer === "function") {
+		return file.arrayBuffer();
+	}
+
 	return new Promise((resolve, reject) => {
 		const reader = new FileReader();
 		reader.onload = () => resolve(reader.result as ArrayBuffer);
@@ -568,13 +572,18 @@ export async function parseBeRealZip(
 
 	onProgress({ total: 100, loaded: 60, message: "Extracting media..." });
 
-	const mediaFiles = Object.values(zip.files).filter(
-		(file) =>
+	const mediaFiles = Object.values(zip.files).filter((file) => {
+		const relativePath =
+			topLevelDir && file.name.startsWith(`${topLevelDir}/`)
+				? file.name.slice(topLevelDir.length + 1)
+				: file.name;
+		return (
 			!file.dir &&
-			(file.name.startsWith("Photos/") ||
-				file.name.startsWith("conversations/") ||
-				file.name.startsWith("profile-pictures/")),
-	);
+			(relativePath.startsWith("Photos/") ||
+				relativePath.startsWith("conversations/") ||
+				relativePath.startsWith("profile-pictures/"))
+		);
+	});
 
 	const totalMedia = mediaFiles.length;
 	let loadedMedia = 0;
@@ -616,6 +625,18 @@ export async function parseBeRealZip(
 			results.forEach((result) => {
 				if (result) {
 					media[result.path] = result.url;
+					const relativePath =
+						topLevelDir && result.path.startsWith(`${topLevelDir}/`)
+							? result.path.slice(topLevelDir.length + 1)
+							: result.path;
+					if (relativePath !== result.path) {
+						media[relativePath] = result.url;
+					}
+
+					const normalizedPath = normalizePath(relativePath);
+					if (normalizedPath !== relativePath) {
+						media[normalizedPath] = result.url;
+					}
 				}
 			});
 

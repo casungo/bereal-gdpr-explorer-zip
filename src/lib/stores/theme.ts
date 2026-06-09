@@ -1,19 +1,31 @@
 import { writable } from "svelte/store";
 
-export type Theme = "autumn" | "halloween";
+export type Theme = "bereal-light" | "bereal-dark";
+
+function normalizeTheme(theme: string | null): Theme | null {
+	if (theme === "bereal-light" || theme === "autumn" || theme === "light") {
+		return "bereal-light";
+	}
+
+	if (theme === "bereal-dark" || theme === "halloween" || theme === "dark") {
+		return "bereal-dark";
+	}
+
+	return null;
+}
 
 const getInitialTheme = (): Theme => {
 	if (typeof window !== "undefined") {
-		const savedTheme = localStorage.getItem("theme");
+		const savedTheme = normalizeTheme(localStorage.getItem("theme"));
 		if (savedTheme) {
-			return savedTheme as Theme;
+			return savedTheme;
 		}
 
 		return window.matchMedia("(prefers-color-scheme: dark)").matches
-			? "halloween"
-			: "autumn";
+			? "bereal-dark"
+			: "bereal-light";
 	}
-	return "autumn";
+	return "bereal-light";
 };
 
 function createThemeStore() {
@@ -31,7 +43,7 @@ function createThemeStore() {
 		toggle: () => {
 			update((currentTheme: Theme) => {
 				const newTheme: Theme =
-					currentTheme === "autumn" ? "halloween" : "autumn";
+					currentTheme === "bereal-light" ? "bereal-dark" : "bereal-light";
 				if (typeof window !== "undefined") {
 					localStorage.setItem("theme", newTheme);
 					document.documentElement.setAttribute("data-theme", newTheme);
