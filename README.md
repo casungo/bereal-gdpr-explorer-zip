@@ -34,7 +34,17 @@ Your privacy is our top priority. This application processes all data locally in
 
 Visit the [live site](https://berealgdprviewer.eu/)
 
-### Offline Usage
+### Install and Use Offline
+
+Open the live site once while online. In a supported browser, use **Install app**
+from the browser menu to add it to your device. After the first successful load,
+the application shell can open without a network connection.
+
+Imported archives, analytics records, generated media, and downloads are never
+stored in the offline cache. Select the export again after refreshing or
+reopening the app.
+
+### Local Development
 
 #### Prerequisites
 
