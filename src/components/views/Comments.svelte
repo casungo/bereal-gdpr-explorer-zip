@@ -5,7 +5,7 @@ import type { Comment, User, MediaMap } from "@/lib/types";
 
 let { comments, user } = $props<{
 	comments: Comment[];
-	user: User;
+	user?: User;
 	media: MediaMap;
 }>();
 </script>
@@ -37,7 +37,7 @@ let { comments, user } = $props<{
           >
             <span
               >By:
-              {user.username}</span
+              {user?.username ?? "Not included"}</span
             >
             <span
             >

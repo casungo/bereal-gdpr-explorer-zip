@@ -17,6 +17,7 @@ interface ArchiveOptions {
 	sections?: Record<string, unknown>;
 	media?: Record<string, Uint8Array>;
 	absoluteSections?: Record<string, unknown>;
+	rawSections?: Record<string, string>;
 	leadingDirectories?: string[];
 	analyticsLines?: unknown[];
 	entryCount?: number;
@@ -27,6 +28,7 @@ async function makeArchive({
 	sections = {},
 	media = {},
 	absoluteSections = {},
+	rawSections = {},
 	leadingDirectories = [],
 	analyticsLines,
 	entryCount = 0,
@@ -49,6 +51,9 @@ async function makeArchive({
 	}
 	for (const [path, value] of Object.entries(absoluteSections)) {
 		zip.file(path, JSON.stringify(value));
+	}
+	for (const [path, value] of Object.entries(rawSections)) {
+		root.file(path, value);
 	}
 	for (let index = 0; index < entryCount; index++) {
 		root.file(`entry-${index}`, "");
@@ -267,7 +272,9 @@ describe("parseBeRealZip", () => {
 	it("leaves every optional JSON section absent when the archive omits it", async () => {
 		const archive = await makeArchive({
 			wrapperPrefix: "bereal-export",
-			sections: { "user.json": user() },
+			sections: {
+				"user.json": { username: "alice", fullname: "Alice Example" },
+			},
 		});
 		const { data } = await parseBeRealZip(
 			archive.zipFile,
@@ -283,6 +290,148 @@ describe("parseBeRealZip", () => {
 		expect(data.friends).toBeUndefined();
 		expect(data.posts).toBeUndefined();
 		expect(data.memories).toBeUndefined();
+		expect(data.user).toMatchObject({
+			username: "alice",
+			createdAt: undefined,
+			birthdate: undefined,
+			platform: undefined,
+			creationDate: undefined,
+		});
+	});
+
+	it("warns about malformed optional records without including their values", async () => {
+		const archive = await makeArchive({
+			sections: {
+				"user.json": user(),
+				"friends.json": [
+					{
+						friendUsername: "bob",
+						friendFullname: "Bob Example",
+						createdAt: "2026-01-02T10:00:00.000Z",
+					},
+					{
+						friendUsername: "private-invalid-record",
+						friendFullname: "Private Invalid Record",
+						createdAt: "not-a-date",
+					},
+				],
+				"friend-requests.json": {},
+				"terms.json": [
+					{
+						code: "terms",
+						status: "accepted",
+						termUrl: "https://example.com/terms",
+					},
+					{ code: "invalid", status: "accepted", termUrl: 42 },
+				],
+			},
+		});
+
+		const result = await parseBeRealZip(
+			archive.zipFile,
+			archive.gzFile,
+			vi.fn(),
+		);
+
+		expect(result.data.friends).toHaveLength(1);
+		expect(result.data.terms).toHaveLength(1);
+		expect(result.warnings).toEqual(
+			expect.arrayContaining([
+				{ section: "friends", code: "INVALID_RECORDS" },
+				{ section: "friendRequests", code: "INVALID_SHAPE" },
+				{ section: "terms", code: "INVALID_RECORDS" },
+			]),
+		);
+		expect(JSON.stringify(result.warnings)).not.toContain(
+			"private-invalid-record",
+		);
+	});
+
+	it("reports malformed optional JSON without exposing its contents", async () => {
+		const archive = await makeArchive({
+			sections: { "user.json": user() },
+			rawSections: { "comments.json": '{"private":"unterminated"' },
+		});
+
+		const result = await parseBeRealZip(
+			archive.zipFile,
+			archive.gzFile,
+			vi.fn(),
+		);
+
+		expect(result.warnings).toContainEqual({
+			section: "comments",
+			code: "MALFORMED_JSON",
+		});
+		expect(JSON.stringify(result.warnings)).not.toContain("private");
+	});
+
+	it("rejects invalid core records instead of dereferencing null media", async () => {
+		const archive = await makeArchive({
+			sections: {
+				"posts.json": [
+					{
+						primary: null,
+						secondary: image("Photos/secondary.jpg"),
+						takenAt: "2026-01-03T10:00:00.000Z",
+					},
+				],
+			},
+		});
+
+		await expect(
+			parseBeRealZip(archive.zipFile, archive.gzFile, vi.fn()),
+		).rejects.toMatchObject({ code: "INVALID_STRUCTURE" });
+	});
+
+	it("keeps comments without inventing an absent user or timestamp", async () => {
+		const archive = await makeArchive({
+			sections: {
+				"posts.json": [],
+				"comments.json": [{ postId: "post-1", content: "hello" }],
+			},
+		});
+
+		const result = await parseBeRealZip(
+			archive.zipFile,
+			archive.gzFile,
+			vi.fn(),
+		);
+
+		expect(result.data.user).toBeUndefined();
+		expect(result.data.comments).toEqual([
+			{ id: "comment-0", postId: "post-1", text: "hello" },
+		]);
+	});
+
+	it("distinguishes valid empty arrays and preserves numeric zero", async () => {
+		const archive = await makeArchive({
+			sections: {
+				"posts.json": [
+					{
+						primary: image("Photos/primary.jpg"),
+						secondary: image("Photos/secondary.jpg"),
+						takenAt: "2026-01-03T10:00:00.000Z",
+						retakeCounter: 0,
+					},
+				],
+				"friends.json": [],
+				"comments.json": [],
+				"terms.json": [],
+			},
+		});
+
+		const result = await parseBeRealZip(
+			archive.zipFile,
+			archive.gzFile,
+			vi.fn(),
+		);
+
+		expect(result.data.posts?.[0]?.retakeCounter).toBe(0);
+		expect(result.data.friends).toEqual([]);
+		expect(result.data.comments).toEqual([]);
+		expect(result.data.terms).toEqual([]);
+		expect(result.warnings).toEqual([]);
 	});
 
 	it.each([
@@ -380,6 +529,31 @@ describe("parseBeRealZip", () => {
 		expect(data.analytics).toEqual([{ event_type: "app_open", event_time: 1 }]);
 	});
 
+	it("filters malformed analytics records with a value-free warning", async () => {
+		const archive = await makeArchive({
+			sections: { "user.json": user() },
+			analyticsLines: [
+				{ event_type: "app_open", event_time: 1 },
+				{ event_type: 42, event_time: 2, private: "do-not-report" },
+			],
+		});
+
+		const result = await parseBeRealZip(
+			archive.zipFile,
+			archive.gzFile,
+			vi.fn(),
+		);
+
+		expect(result.data.analytics).toEqual([
+			{ event_type: "app_open", event_time: 1 },
+		]);
+		expect(result.warnings).toContainEqual({
+			section: "analytics",
+			code: "INVALID_RECORDS",
+		});
+		expect(JSON.stringify(result.warnings)).not.toContain("do-not-report");
+	});
+
 	it("accepts compressed inputs exactly at their byte limits", async () => {
 		const archive = await makeArchive({
 			sections: { "user.json": user() },
@@ -466,6 +640,11 @@ describe("parseBeRealZip", () => {
 				new ArchiveParseError("INVALID_ANALYTICS", "internal detail"),
 			),
 		).toBe("The analytics file appears to be corrupted or invalid.");
+		expect(
+			userMessageForArchiveError(
+				new ArchiveParseError("INVALID_STRUCTURE", "internal detail"),
+			),
+		).toBe("The files do not contain a supported BeReal data structure.");
 	});
 
 	it("rejects a non-gzip analytics sidecar", async () => {

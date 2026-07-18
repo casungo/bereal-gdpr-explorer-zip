@@ -41,7 +41,8 @@ const userAge = $derived.by(() => {
 
 const memberSince = $derived.by(() => {
 	if (!user.creationDate) return "Unknown";
-	return format(new Date(user.creationDate), "MMM dd yyyy");
+	const date = new Date(user.creationDate);
+	return Number.isNaN(date.getTime()) ? "Unknown" : format(date, "MMM dd yyyy");
 });
 
 const deviceInfo = $derived.by(() => {
@@ -62,7 +63,11 @@ const platformName = $derived.by(() => {
 				return "Unknown";
 		}
 	}
-	return deviceInfo.includes("iOS") ? "iOS" : "Android";
+	return deviceInfo.includes("iOS")
+		? "iOS"
+		: deviceInfo.includes("Android")
+			? "Android"
+			: "Unknown";
 });
 </script>
 

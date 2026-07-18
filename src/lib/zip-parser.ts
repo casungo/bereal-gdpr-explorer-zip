@@ -1,13 +1,14 @@
 import JSZip from "jszip";
 import pako from "pako";
 import type {
+	AnalyticsEvent,
 	BeRealData,
 	ChatMessage,
 	Conversation,
+	ImportWarning,
 	MediaMap,
 	ProgressCallback,
 	PushSettings,
-	User,
 } from "@/lib/types";
 
 const PROGRESS_UPDATE_INTERVAL = 5;
@@ -45,7 +46,8 @@ export type ArchiveErrorCode =
 	| "ENTRY_TOO_LARGE"
 	| "ARCHIVE_TOO_LARGE"
 	| "INVALID_ARCHIVE"
-	| "INVALID_ANALYTICS";
+	| "INVALID_ANALYTICS"
+	| "INVALID_STRUCTURE";
 
 export class ArchiveParseError extends Error {
 	constructor(
@@ -136,20 +138,44 @@ async function readFileAsArrayBuffer(file: File): Promise<ArrayBuffer> {
 	});
 }
 
-async function parseJsonSafe<T>(
+interface ValidatedValue<T> {
+	value: T;
+	discardedRecords?: boolean;
+}
+
+interface SectionResult<T> {
+	value?: T;
+	state: "missing" | "valid" | "invalid";
+}
+
+async function parseJsonSection<T>(
 	zip: JSZip,
 	path: string,
-): Promise<T | undefined> {
+	section: string,
+	validate: (value: unknown) => ValidatedValue<T> | null,
+	warnings: ImportWarning[],
+): Promise<SectionResult<T>> {
 	const file = zip.file(path);
 	if (!file) {
-		return undefined;
+		return { state: "missing" };
 	}
+	let parsed: unknown;
 	try {
 		const content = await file.async("string");
-		return JSON.parse(content) as T;
-	} catch (error) {
-		return undefined;
+		parsed = JSON.parse(content);
+	} catch {
+		warnings.push({ section, code: "MALFORMED_JSON" });
+		return { state: "invalid" };
 	}
+	const validated = validate(parsed);
+	if (!validated) {
+		warnings.push({ section, code: "INVALID_SHAPE" });
+		return { state: "invalid" };
+	}
+	if (validated.discardedRecords) {
+		warnings.push({ section, code: "INVALID_RECORDS" });
+	}
+	return { value: validated.value, state: "valid" };
 }
 
 interface RawUser {
@@ -317,9 +343,376 @@ interface RawTerm {
 	signedAt?: string;
 }
 
+type UnknownRecord = Record<string, unknown>;
+
+function isRecord(value: unknown): value is UnknownRecord {
+	return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function isString(value: unknown): value is string {
+	return typeof value === "string";
+}
+
+function isNumber(value: unknown): value is number {
+	return typeof value === "number" && Number.isFinite(value);
+}
+
+function isBoolean(value: unknown): value is boolean {
+	return typeof value === "boolean";
+}
+
+function isDateString(value: unknown): value is string {
+	return isString(value) && !Number.isNaN(Date.parse(value));
+}
+
+function optionalField(
+	record: UnknownRecord,
+	key: string,
+	validate: (value: unknown) => boolean,
+): boolean {
+	return !(key in record) || record[key] === undefined || validate(record[key]);
+}
+
+function isStringArray(value: unknown): value is string[] {
+	return Array.isArray(value) && value.every(isString);
+}
+
+function isLocation(value: unknown): boolean {
+	return (
+		isRecord(value) && isNumber(value.latitude) && isNumber(value.longitude)
+	);
+}
+
+function isBirthdate(value: unknown): boolean {
+	if (
+		!isRecord(value) ||
+		!isNumber(value.year) ||
+		!isNumber(value.month) ||
+		!isNumber(value.day) ||
+		!Number.isInteger(value.year) ||
+		!Number.isInteger(value.month) ||
+		!Number.isInteger(value.day)
+	) {
+		return false;
+	}
+	const date = new Date(Date.UTC(value.year, value.month - 1, value.day));
+	return (
+		date.getUTCFullYear() === value.year &&
+		date.getUTCMonth() === value.month - 1 &&
+		date.getUTCDate() === value.day
+	);
+}
+
+function isRawMedia(value: unknown): boolean {
+	return (
+		isRecord(value) &&
+		isString(value.path) &&
+		isString(value.bucket) &&
+		isNumber(value.height) &&
+		isNumber(value.width) &&
+		(value.mediaType === "image" || value.mediaType === "video") &&
+		isString(value.mimeType)
+	);
+}
+
+function validateRecordArray<T>(
+	value: unknown,
+	validate: (record: unknown) => record is T,
+): ValidatedValue<T[]> | null {
+	if (!Array.isArray(value)) return null;
+	const records = value.filter(validate);
+	if (value.length > 0 && records.length === 0) return null;
+	return { value: records, discardedRecords: records.length !== value.length };
+}
+
+function isRawUser(value: unknown): value is RawUser {
+	return (
+		isRecord(value) &&
+		isString(value.username) &&
+		isString(value.fullname) &&
+		optionalField(value, "id", isString) &&
+		optionalField(value, "uid", isString) &&
+		optionalField(value, "createdAt", isDateString) &&
+		optionalField(
+			value,
+			"profilePicture",
+			(profile) =>
+				isRecord(profile) &&
+				isString(profile.path) &&
+				isString(profile.bucket) &&
+				isString(profile.height) &&
+				isString(profile.width),
+		) &&
+		optionalField(
+			value,
+			"platform",
+			(platform) => platform === "android" || platform === "ios",
+		) &&
+		optionalField(value, "deviceId", isString) &&
+		optionalField(value, "biography", isString) &&
+		optionalField(value, "location", isString) &&
+		optionalField(value, "birthdate", isBirthdate) &&
+		optionalField(value, "phoneNumber", isString) &&
+		optionalField(value, "clientVersion", isString) &&
+		optionalField(value, "timezone", isString) &&
+		optionalField(value, "language", isString) &&
+		optionalField(value, "countryCode", isString) &&
+		optionalField(value, "region", isString)
+	);
+}
+
+function isRawFriend(value: unknown): value is RawFriend {
+	return (
+		isRecord(value) &&
+		isString(value.friendUsername) &&
+		isString(value.friendFullname) &&
+		isDateString(value.createdAt)
+	);
+}
+
+function isRawFriendRequest(value: unknown): value is RawFriendRequest {
+	return (
+		isRecord(value) &&
+		optionalField(value, "fromUserId", isString) &&
+		isString(value.status) &&
+		isDateString(value.createdAt) &&
+		isDateString(value.updatedAt)
+	);
+}
+
+function isRawPost(value: unknown): value is RawPost {
+	return (
+		isRecord(value) &&
+		optionalField(value, "id", isString) &&
+		isRawMedia(value.primary) &&
+		isRawMedia(value.secondary) &&
+		optionalField(value, "retakeCounter", isNumber) &&
+		optionalField(value, "visibility", isStringArray) &&
+		isDateString(value.takenAt) &&
+		optionalField(value, "caption", isString) &&
+		optionalField(value, "location", isLocation) &&
+		optionalField(value, "btsMedia", isRawMedia)
+	);
+}
+
+function isRawMemory(value: unknown): value is RawMemory {
+	return (
+		isRecord(value) &&
+		optionalField(value, "id", isString) &&
+		isRawMedia(value.frontImage) &&
+		isRawMedia(value.backImage) &&
+		isBoolean(value.isLate) &&
+		isDateString(value.date) &&
+		isDateString(value.takenTime) &&
+		isDateString(value.berealMoment) &&
+		optionalField(value, "caption", isString) &&
+		optionalField(value, "location", isLocation) &&
+		optionalField(value, "btsMedia", isRawMedia) &&
+		optionalField(
+			value,
+			"music",
+			(music) =>
+				isRecord(music) &&
+				[
+					"track",
+					"artist",
+					"openUrl",
+					"artwork",
+					"providerId",
+					"isrc",
+					"visibility",
+					"audioType",
+					"provider",
+				].every((key) => isString(music[key])),
+		)
+	);
+}
+
+function isRawComment(value: unknown): value is RawComment {
+	return (
+		isRecord(value) && isString(value.postId) && isString(value.content)
+	);
+}
+
+function isRawRealmoji(value: unknown): value is RawRealmoji {
+	return (
+		isRecord(value) &&
+		optionalField(value, "id", isString) &&
+		isDateString(value.createdAt) &&
+		isString(value.emoji) &&
+		optionalField(
+			value,
+			"media",
+			(media) =>
+				isRecord(media) &&
+				isString(media.bucket) &&
+				isNumber(media.height) &&
+				isNumber(media.width) &&
+				isString(media.path) &&
+				isString(media.mediaType),
+		) &&
+		optionalField(value, "isEnabled", isBoolean) &&
+		optionalField(value, "userId", isString) &&
+		optionalField(value, "username", isString)
+	);
+}
+
+function isRawPushToken(value: unknown): value is RawPushToken {
+	return (
+		isRecord(value) &&
+		optionalField(value, "token", isString) &&
+		optionalField(value, "deviceId", isString) &&
+		optionalField(
+			value,
+			"platform",
+			(platform) => platform === "ios" || platform === "android",
+		) &&
+		optionalField(value, "clientVersion", isString) &&
+		optionalField(value, "language", isString) &&
+		optionalField(value, "region", isString) &&
+		optionalField(value, "timezone", isString)
+	);
+}
+
+function isRawTerm(value: unknown): value is RawTerm {
+	return (
+		isRecord(value) &&
+		isString(value.code) &&
+		isString(value.status) &&
+		optionalField(value, "version", isNumber) &&
+		isString(value.termUrl) &&
+		optionalField(value, "signedAt", isDateString)
+	);
+}
+
+function validatePushSettings(
+	value: unknown,
+): ValidatedValue<PushSettings> | null {
+	return isRecord(value) && Object.values(value).every(isBoolean)
+		? { value: value as PushSettings }
+		: null;
+}
+
+function isAnalyticsEvent(value: unknown): value is AnalyticsEvent {
+	if (
+		!isRecord(value) ||
+		!isString(value.event_type) ||
+		!isNumber(value.event_time)
+	) {
+		return false;
+	}
+	for (const key of [
+		"event_id",
+		"client_event_time",
+		"client_upload_time",
+	]) {
+		if (!optionalField(value, key, isNumber)) return false;
+	}
+	for (const key of [
+		"user_id",
+		"city",
+		"country",
+		"region",
+		"device_type",
+		"device_family",
+		"device_id",
+		"ip_address",
+		"language",
+		"platform",
+		"version_name",
+		"os_name",
+	]) {
+		if (!optionalField(value, key, isString)) return false;
+	}
+	return optionalField(
+		value,
+		"user_properties",
+		(properties) =>
+			isRecord(properties) &&
+			["gender", "birthdayDate", "buildNumber", "countryCode"].every(
+				(key) =>
+					optionalField(
+						properties,
+						key,
+						(field) => field === null || isString(field),
+					),
+			),
+	);
+}
+
+interface RawChatMessage {
+	id?: string;
+	userId: string;
+	message: string;
+	createdAt: string;
+	media?: {
+		path: string;
+		width: number;
+		height: number;
+		mediaType?: "image" | "video";
+	};
+}
+
+interface RawChatLog {
+	participants?: { id: string; username: string }[];
+	messages: RawChatMessage[];
+}
+
+function isChatParticipant(
+	value: unknown,
+): value is { id: string; username: string } {
+	return isRecord(value) && isString(value.id) && isString(value.username);
+}
+
+function validateChatLog(value: unknown): ValidatedValue<RawChatLog> | null {
+	if (!isRecord(value) || !Array.isArray(value.messages)) return null;
+	if (
+		!optionalField(
+			value,
+			"participants",
+			(participants) =>
+				Array.isArray(participants) &&
+				participants.every(isChatParticipant),
+		)
+	) {
+		return null;
+	}
+	const messages = value.messages.filter(
+		(message): message is RawChatMessage =>
+			isRecord(message) &&
+			optionalField(message, "id", isString) &&
+			isString(message.userId) &&
+			isString(message.message) &&
+			isDateString(message.createdAt) &&
+			optionalField(
+				message,
+				"media",
+				(media) =>
+					isRecord(media) &&
+					isString(media.path) &&
+					isNumber(media.width) &&
+					isNumber(media.height) &&
+					optionalField(
+						media,
+						"mediaType",
+						(type) => type === "image" || type === "video",
+					),
+			),
+	);
+	return {
+		value: {
+			participants: Array.isArray(value.participants)
+				? value.participants.filter(isChatParticipant)
+				: undefined,
+			messages,
+		},
+		discardedRecords: messages.length !== value.messages.length,
+	};
+}
+
 async function parseConversations(
 	zip: JSZip,
-	_user: User | undefined,
+	warnings: ImportWarning[],
 ): Promise<Conversation[]> {
 	const chatLogRegex = /^(?:[^/]+\/)?conversations\/([^/]+)\/chat_log\.json$/;
 
@@ -329,10 +722,14 @@ async function parseConversations(
 			const match = relativePath.match(chatLogRegex);
 			if (match) {
 				const conversationId = match[1];
-				const chatLog = await parseJsonSafe<{
-					participants?: { id: string; username: string }[];
-					messages: any[];
-				}>(zip, relativePath);
+				const chatLogResult = await parseJsonSection(
+					zip,
+					relativePath,
+					"conversations",
+					validateChatLog,
+					warnings,
+				);
+				const chatLog = chatLogResult.value;
 
 				if (chatLog && chatLog.messages) {
 					const messages: ChatMessage[] = chatLog.messages
@@ -392,7 +789,7 @@ export async function parseBeRealZip(
 	zipFile: File,
 	gzFile: File | null,
 	onProgress: ProgressCallback,
-): Promise<{ data: BeRealData; media: MediaMap }> {
+): Promise<{ data: BeRealData; media: MediaMap; warnings: ImportWarning[] }> {
 	if (!zipFile) {
 		throw new Error("A zip file is required");
 	}
@@ -468,8 +865,10 @@ export async function parseBeRealZip(
 		}
 	}
 
-	const analyticsData: unknown[] = [];
+	const warnings: ImportWarning[] = [];
+	const analyticsData: AnalyticsEvent[] = [];
 	if (gzBuffer) {
+		let invalidAnalyticsRecords = false;
 		let analyticsText: string;
 		try {
 			analyticsText = pako.ungzip(gzBuffer, { to: "string" });
@@ -499,13 +898,21 @@ export async function parseBeRealZip(
 			lineStart = index + 1;
 			if (!line) continue;
 			try {
-				analyticsData.push(JSON.parse(line));
+				const event: unknown = JSON.parse(line);
+				if (isAnalyticsEvent(event)) {
+					analyticsData.push(event);
+				} else {
+					invalidAnalyticsRecords = true;
+				}
 			} catch {
 				archiveError(
 					"INVALID_ANALYTICS",
 					`Analytics data contains invalid JSON at line ${lineCount}.`,
 				);
 			}
+		}
+		if (invalidAnalyticsRecords) {
+			warnings.push({ section: "analytics", code: "INVALID_RECORDS" });
 		}
 	}
 
@@ -517,34 +924,114 @@ export async function parseBeRealZip(
 	}
 
 	const data: BeRealData = {
-		analytics: analyticsData as BeRealData["analytics"],
+		analytics: analyticsData,
 	};
 	const media: MediaMap = {};
 
 	onProgress({ total: 100, loaded: 25, message: "Parsing JSON files..." });
 	const [
-		userRaw,
-		friendsRaw,
-		friendRequestsRaw,
-		postsRaw,
-		memoriesRaw,
-		commentsRaw,
-		realmojisRaw,
-		pushSettings,
-		pushTokensRaw,
-		termsRaw,
+		userResult,
+		friendsResult,
+		friendRequestsResult,
+		postsResult,
+		memoriesResult,
+		commentsResult,
+		realmojisResult,
+		pushSettingsResult,
+		pushTokensResult,
+		termsResult,
 	] = await Promise.all([
-		parseJsonSafe<RawUser>(zip, "user.json"),
-		parseJsonSafe<RawFriend[]>(zip, "friends.json"),
-		parseJsonSafe<RawFriendRequest[]>(zip, "friend-requests.json"),
-		parseJsonSafe<RawPost[]>(zip, "posts.json"),
-		parseJsonSafe<RawMemory[]>(zip, "memories.json"),
-		parseJsonSafe<RawComment[]>(zip, "comments.json"),
-		parseJsonSafe<RawRealmoji[]>(zip, "realmojis.json"),
-		parseJsonSafe<PushSettings>(zip, "push-settings.json"),
-		parseJsonSafe<RawPushToken[]>(zip, "push-tokens.json"),
-		parseJsonSafe<RawTerm[]>(zip, "terms.json"),
+		parseJsonSection(
+			zip,
+			"user.json",
+			"user",
+			(value) => (isRawUser(value) ? { value } : null),
+			warnings,
+		),
+		parseJsonSection(
+			zip,
+			"friends.json",
+			"friends",
+			(value) => validateRecordArray(value, isRawFriend),
+			warnings,
+		),
+		parseJsonSection(
+			zip,
+			"friend-requests.json",
+			"friendRequests",
+			(value) => validateRecordArray(value, isRawFriendRequest),
+			warnings,
+		),
+		parseJsonSection(
+			zip,
+			"posts.json",
+			"posts",
+			(value) => validateRecordArray(value, isRawPost),
+			warnings,
+		),
+		parseJsonSection(
+			zip,
+			"memories.json",
+			"memories",
+			(value) => validateRecordArray(value, isRawMemory),
+			warnings,
+		),
+		parseJsonSection(
+			zip,
+			"comments.json",
+			"comments",
+			(value) => validateRecordArray(value, isRawComment),
+			warnings,
+		),
+		parseJsonSection(
+			zip,
+			"realmojis.json",
+			"realmojis",
+			(value) => validateRecordArray(value, isRawRealmoji),
+			warnings,
+		),
+		parseJsonSection(
+			zip,
+			"push-settings.json",
+			"pushSettings",
+			validatePushSettings,
+			warnings,
+		),
+		parseJsonSection(
+			zip,
+			"push-tokens.json",
+			"pushTokens",
+			(value) => validateRecordArray(value, isRawPushToken),
+			warnings,
+		),
+		parseJsonSection(
+			zip,
+			"terms.json",
+			"terms",
+			(value) => validateRecordArray(value, isRawTerm),
+			warnings,
+		),
 	]);
+	if (
+		userResult.state !== "valid" &&
+		postsResult.state !== "valid" &&
+		memoriesResult.state !== "valid"
+	) {
+		archiveError(
+			"INVALID_STRUCTURE",
+			"The export does not contain valid user, posts, or memories data.",
+		);
+	}
+	const userRaw = userResult.value;
+	const friendsRaw = friendsResult.value;
+	const friendRequestsRaw = friendRequestsResult.value;
+	const postsRaw = postsResult.value;
+	const memoriesRaw = memoriesResult.value;
+	const commentsRaw = commentsResult.value;
+	const realmojisRaw = realmojisResult.value;
+	const pushSettings = pushSettingsResult.value;
+	const pushTokensRaw = pushTokensResult.value;
+	const termsRaw = termsResult.value;
 	onProgress({ total: 100, loaded: 40, message: "Mapping data structures..." });
 
 	if (userRaw) {
@@ -552,35 +1039,36 @@ export async function parseBeRealZip(
 			id: userRaw.id || userRaw.uid,
 			username: userRaw.username,
 			fullname: userRaw.fullname,
-			createdAt: userRaw.createdAt || new Date().toISOString(),
+			createdAt: userRaw.createdAt,
 			profilePicture: userRaw.profilePicture
 				? {
 						...userRaw.profilePicture,
 						path: normalizePath(userRaw.profilePicture.path),
 					}
-				: {
-						path: "",
-						bucket: "",
-						height: "0",
-						width: "0",
-					},
-			device: userRaw.platform === "android" ? "Android" : "iOS",
-			deviceId: userRaw.deviceId || "",
-			biography: userRaw.biography || "",
-			location: userRaw.location || "",
-			birthdate: userRaw.birthdate || {
-				year: 2000,
-				month: 1,
-				day: 1,
-			},
-			phoneNumber: userRaw.phoneNumber || "",
-			clientVersion: userRaw.clientVersion || "",
-			timezone: userRaw.timezone || "",
-			language: userRaw.language || "",
-			countryCode: userRaw.countryCode || "",
-			region: userRaw.region || "",
-			platform: userRaw.platform === "android" ? 2 : 1,
-			creationDate: userRaw.createdAt || new Date().toISOString(),
+				: undefined,
+			device:
+				userRaw.platform === "android"
+					? "Android"
+					: userRaw.platform === "ios"
+						? "iOS"
+						: undefined,
+			deviceId: userRaw.deviceId,
+			biography: userRaw.biography,
+			location: userRaw.location,
+			birthdate: userRaw.birthdate,
+			phoneNumber: userRaw.phoneNumber,
+			clientVersion: userRaw.clientVersion,
+			timezone: userRaw.timezone,
+			language: userRaw.language,
+			countryCode: userRaw.countryCode,
+			region: userRaw.region,
+			platform:
+				userRaw.platform === "android"
+					? 2
+					: userRaw.platform === "ios"
+						? 1
+						: undefined,
+			creationDate: userRaw.createdAt,
 		};
 	}
 
@@ -597,7 +1085,7 @@ export async function parseBeRealZip(
 	if (friendRequestsRaw) {
 		data.friendRequests = friendRequestsRaw.map((fr, i) => ({
 			id: fr.fromUserId ? `${fr.fromUserId}-${fr.createdAt}` : `fr-${i}`,
-			fromUserId: fr.fromUserId || "",
+			fromUserId: fr.fromUserId,
 			status: fr.status,
 			createdAt: fr.createdAt,
 			updatedAt: fr.updatedAt,
@@ -615,8 +1103,8 @@ export async function parseBeRealZip(
 				...p.secondary,
 				path: normalizePath(p.secondary.path),
 			},
-			retakeCounter: p.retakeCounter || 0,
-			visibility: p.visibility || [],
+			retakeCounter: p.retakeCounter,
+			visibility: p.visibility,
 			takenAt: p.takenAt,
 			caption: p.caption,
 			location: p.location,
@@ -672,8 +1160,6 @@ export async function parseBeRealZip(
 				(new Date(m.takenTime).getTime() - new Date(m.berealMoment).getTime()) /
 				1000,
 			isMemory: true,
-			visibility: [],
-			retakeCounter: 0,
 		}));
 	}
 
@@ -682,8 +1168,6 @@ export async function parseBeRealZip(
 			id: `comment-${i}`,
 			postId: c.postId,
 			text: c.content,
-			author: { id: data.user?.id || "", username: "unknown" },
-			creationDate: new Date(0).toISOString(),
 		}));
 	}
 
@@ -697,31 +1181,29 @@ export async function parseBeRealZip(
 						...r.media,
 						path: normalizePath(r.media.path),
 					}
-				: {
-						bucket: "",
-						height: 0,
-						width: 0,
-						path: "",
-						mediaType: "",
-					},
-			isEnabled: r.isEnabled !== undefined ? r.isEnabled : true,
+				: undefined,
+			isEnabled: r.isEnabled,
 
 			creationDate: r.createdAt,
-			isInstant: false,
-			authorId: r.userId || "",
-			username: r.username || "unknown",
+			authorId: r.userId,
+			username: r.username,
 		}));
 	}
 
 	data.pushSettings = pushSettings;
 	if (pushTokensRaw) {
 		data.pushTokens = pushTokensRaw.map((t) => ({
-			token: t.token || t.deviceId || "",
-			os: t.platform === "ios" ? "iOS" : "Android",
-			clientVersion: t.clientVersion || "",
-			language: t.language || "",
-			region: t.region || "",
-			timezone: t.timezone || "",
+			token: t.token ?? t.deviceId,
+			os:
+				t.platform === "ios"
+					? "iOS"
+					: t.platform === "android"
+						? "Android"
+						: undefined,
+			clientVersion: t.clientVersion,
+			language: t.language,
+			region: t.region,
+			timezone: t.timezone,
 		}));
 	}
 
@@ -729,17 +1211,17 @@ export async function parseBeRealZip(
 		data.terms = termsRaw.map((t) => ({
 			code: t.code,
 			status: t.status,
-			version: t.version || 1,
+			version: t.version,
 			termUrl: t.termUrl,
-			signedAt: t.signedAt || new Date(0).toISOString(),
+			signedAt: t.signedAt,
 
 			url: t.termUrl,
-			date: t.signedAt || new Date(0).toISOString(),
+			date: t.signedAt,
 		}));
 	}
 
 	onProgress({ total: 100, loaded: 50, message: "Parsing conversations..." });
-	data.conversations = await parseConversations(rawZip, data.user);
+	data.conversations = await parseConversations(rawZip, warnings);
 
 	onProgress({ total: 100, loaded: 60, message: "Extracting media..." });
 
@@ -843,5 +1325,5 @@ export async function parseBeRealZip(
 
 	onProgress({ total: 100, loaded: 100, message: "Done!" });
 
-	return { data, media };
+	return { data, media, warnings };
 }

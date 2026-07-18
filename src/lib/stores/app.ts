@@ -31,6 +31,8 @@ export function userMessageForArchiveError(error: unknown): string {
 			return "Invalid file format. Please select the correct BeReal export files.";
 		case "INVALID_ANALYTICS":
 			return "The analytics file appears to be corrupted or invalid.";
+		case "INVALID_STRUCTURE":
+			return "The files do not contain a supported BeReal data structure.";
 		case "INVALID_ARCHIVE":
 			return "The ZIP file appears to be corrupted or invalid. Please try again.";
 	}

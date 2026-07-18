@@ -44,30 +44,30 @@ export interface Memory {
 
 export interface User {
 	username: string;
-	birthdate: {
+	birthdate?: {
 		year: number;
 		month: number;
 		day: number;
 	};
 	fullname: string;
-	clientVersion: string;
-	device: string;
-	deviceId: string;
-	phoneNumber: string;
-	profilePicture: {
+	clientVersion?: string;
+	device?: string;
+	deviceId?: string;
+	phoneNumber?: string;
+	profilePicture?: {
 		path: string;
 		bucket: string;
 		height: string;
 		width: string;
 	};
-	biography: string;
-	location: string;
-	platform: number;
-	countryCode: string;
-	language: string;
-	timezone: string;
-	region: string;
-	createdAt: string;
+	biography?: string;
+	location?: string;
+	platform?: number;
+	countryCode?: string;
+	language?: string;
+	timezone?: string;
+	region?: string;
+	createdAt?: string;
 	id?: string;
 	creationDate?: string;
 }
@@ -82,7 +82,7 @@ export interface Friend {
 
 export interface FriendRequest {
 	id: string;
-	fromUserId: string;
+	fromUserId?: string;
 	status: string;
 	createdAt: string;
 	updatedAt: string;
@@ -92,8 +92,8 @@ export interface Post {
 	id?: string;
 	primary: Media;
 	secondary: Media;
-	retakeCounter: number;
-	visibility: string[];
+	retakeCounter?: number;
+	visibility?: string[];
 	takenAt: string;
 	caption?: string;
 	location?: {
@@ -109,23 +109,23 @@ export interface Post {
 export interface Comment {
 	id: string;
 	postId: string;
-	author: { id: string; username: string };
+	author?: { id: string; username: string };
 	text: string;
-	creationDate: string;
+	creationDate?: string;
 }
 
 export interface Realmoji {
 	id?: string;
 	createdAt: string;
 	emoji: string;
-	media: {
+	media?: {
 		bucket: string;
 		height: number;
 		width: number;
 		path: string;
 		mediaType: string;
 	};
-	isEnabled: boolean;
+	isEnabled?: boolean;
 	creationDate?: string;
 	isInstant?: boolean;
 	authorId?: string;
@@ -137,18 +137,18 @@ export interface PushSettings {
 }
 
 export interface PushToken {
-	token: string;
-	os: "iOS" | "Android";
-	clientVersion: string;
-	language: string;
-	region: string;
-	timezone: string;
+	token?: string;
+	os?: "iOS" | "Android";
+	clientVersion?: string;
+	language?: string;
+	region?: string;
+	timezone?: string;
 }
 
 export interface Term {
 	code: string;
 	status: string;
-	version: number;
+	version?: number;
 	termUrl: string;
 	signedAt?: string;
 	url?: string;
@@ -189,31 +189,36 @@ export interface BeRealData {
 	analytics?: AnalyticsEvent[];
 }
 
+export interface ImportWarning {
+	section: string;
+	code: "MALFORMED_JSON" | "INVALID_SHAPE" | "INVALID_RECORDS";
+}
+
 export type MediaMap = Record<string, string>;
 
 export interface AnalyticsEvent {
 	event_type: string;
 	event_time: number;
-	event_id: number;
-	user_id: string;
-	client_event_time: number;
-	client_upload_time: number;
-	city: string;
-	country: string;
-	region: string;
-	device_type: string;
-	device_family: string;
-	device_id: string;
-	ip_address: string;
-	language: string;
-	platform: string;
-	version_name: string;
-	os_name: string;
-	user_properties: {
-		gender: string | null;
-		birthdayDate: string | null;
-		buildNumber: string | null;
-		countryCode: string | null;
+	event_id?: number;
+	user_id?: string;
+	client_event_time?: number;
+	client_upload_time?: number;
+	city?: string;
+	country?: string;
+	region?: string;
+	device_type?: string;
+	device_family?: string;
+	device_id?: string;
+	ip_address?: string;
+	language?: string;
+	platform?: string;
+	version_name?: string;
+	os_name?: string;
+	user_properties?: {
+		gender?: string | null;
+		birthdayDate?: string | null;
+		buildNumber?: string | null;
+		countryCode?: string | null;
 	};
 }
 
