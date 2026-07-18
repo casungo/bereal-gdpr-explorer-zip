@@ -485,13 +485,44 @@ describe("parseBeRealZip", () => {
 					messages: [
 						{
 							userId: "user-1",
-							message: "newer",
+							message: "ordinary Latin",
+							createdAt: "2026-01-05T10:00:00.000Z",
+						},
+						{
+							userId: "user-1",
+							message: "你好",
+							createdAt: "2026-01-05T10:01:00.000Z",
+						},
+						{
+							userId: "user-1",
+							message: "مرحبا",
 							createdAt: "2026-01-05T10:02:00.000Z",
 						},
 						{
 							userId: "user-1",
+							message: "😀✨",
+							createdAt: "2026-01-05T10:03:00.000Z",
+						},
+						{
+							userId: "user-1",
+							message: "",
+							createdAt: "2026-01-05T10:04:00.000Z",
+							media: {
+								path: "conversations/shared.jpg",
+								width: 640,
+								height: 480,
+								mediaType: "image",
+							},
+						},
+						{
+							userId: "user-1",
+							message: "newer",
+							createdAt: "2026-01-05T10:06:00.000Z",
+						},
+						{
+							userId: "user-1",
 							message: "older",
-							createdAt: "2026-01-05T10:01:00.000Z",
+							createdAt: "2026-01-05T10:05:00.000Z",
 						},
 					],
 				},
@@ -505,9 +536,18 @@ describe("parseBeRealZip", () => {
 		);
 
 		expect(data.conversations?.[0]?.messages.map((m) => m.content)).toEqual([
+			"ordinary Latin",
+			"你好",
+			"مرحبا",
+			"😀✨",
+			"",
 			"older",
 			"newer",
 		]);
+		expect(data.conversations?.[0]?.messages[4]?.media).toMatchObject({
+			path: "conversations/shared.jpg",
+			type: "image",
+		});
 	});
 
 	it("reports progress above zero and finishes at 100", async () => {

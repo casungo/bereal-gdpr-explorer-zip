@@ -24,17 +24,8 @@
 
 	const normalizedSearch = $derived(searchQuery.trim().toLowerCase());
 
-	const conversationsWithValidMessages = $derived(
-		conversations.map((conversation) => ({
-			...conversation,
-			messages: conversation.messages.filter((message) =>
-				isValidMessage(message.content),
-			),
-		})),
-	);
-
 	const visibleConversations = $derived(
-		conversationsWithValidMessages.filter((conversation) => {
+		conversations.filter((conversation) => {
 			if (!normalizedSearch) return true;
 
 			const otherParticipant = getOtherParticipant(conversation);
@@ -112,19 +103,6 @@
 		return format(parsedDate, "p");
 	}
 
-	function isValidMessage(content: string): boolean {
-		if (!content) return true;
-
-		const hasInvalidChars = /[\x00-\x08\x0B\x0C\x0E-\x1F\x7F-\x9F]/.test(
-			content,
-		);
-		const specialCharCount = (content.match(/[^\w\s\p{P}\p{S}]/gu) || [])
-			.length;
-		const specialCharRatio =
-			content.length > 0 ? specialCharCount / content.length : 0;
-
-		return !hasInvalidChars && specialCharRatio <= 0.3;
-	}
 </script>
 
 {#if !conversations || conversations.length === 0}
