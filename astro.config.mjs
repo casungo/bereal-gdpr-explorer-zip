@@ -5,24 +5,24 @@ import tailwindcss from "@tailwindcss/vite";
 import { defineConfig } from "astro/config";
 
 export default defineConfig({
-	vite: {
-		plugins: [tailwindcss()],
-		build: {
-			target: "es2020",
-			minify: "esbuild",
-			sourcemap: false,
-		},
-		optimizeDeps: {
-			exclude: ["@types/pako"],
-		},
-	},
+  vite: {
+    plugins: [tailwindcss()],
+    build: {
+      target: "es2020",
+      minify: "esbuild",
+      sourcemap: false,
+    },
+    optimizeDeps: {
+      exclude: ["@types/pako"],
+    },
+  },
 
-	integrations: [svelte()],
+  integrations: [svelte()],
 
-	build: {
-		format: "directory",
-		assets: "_assets",
-	},
+  build: {
+    format: "directory",
+    assets: "_assets",
+  },
 
-	output: "static",
+  output: "static",
 });

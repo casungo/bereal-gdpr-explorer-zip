@@ -3,12 +3,7 @@ import JSZip from "jszip";
 import type { Media, MediaMap, Memory, Post } from "@/lib/types";
 
 export type DownloadType =
-  | "primary"
-  | "secondary"
-  | "both"
-  | "merged"
-  | "video"
-  | "complete";
+  "primary" | "secondary" | "both" | "merged" | "video" | "complete";
 
 export interface DownloadSelection {
   primary: boolean;

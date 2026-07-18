@@ -1,40 +1,40 @@
 {
-	"name": "bereal-gdpr-explorer-zip",
-	"type": "module",
-	"version": "2.0.0",
-	"packageManager": "pnpm@11.9.0",
-	"scripts": {
-		"astro": "astro",
-		"dev": "astro dev",
-		"dev:lan": "astro dev --host 0.0.0.0",
-		"build": "astro build",
-		"preview": "astro preview",
-		"preview:lan": "astro preview --host 0.0.0.0",
-		"check": "astro check",
-		"format": "prettier --write \"src/**/*.{ts,svelte,astro}\" \"*.{json,js,ts,mjs}\"",
-		"format:check": "prettier --check \"src/**/*.{ts,svelte,astro}\" \"*.{json,js,ts,mjs}\"",
-		"test": "vitest run"
-	},
-	"dependencies": {
-		"@lucide/svelte": "^1.14.0",
-		"date-fns": "^4.1.0",
-		"jszip": "^3.10.1",
-		"pako": "^2.1.0",
-		"svelte": "^5.56.6"
-	},
-	"devDependencies": {
-		"@astrojs/check": "^0.9.9",
-		"@astrojs/svelte": "^8.1.2",
-		"@tailwindcss/vite": "^4.2.4",
-		"@types/pako": "^2.0.4",
-		"astro": "^6.4.8",
-		"daisyui": "^5.5.19",
-		"prettier": "^3.8.3",
-		"prettier-plugin-astro": "^0.14.1",
-		"prettier-plugin-svelte": "^3.5.1",
-		"tailwindcss": "^4.2.4",
-		"typescript": "^6.0.3",
-		"vitest": "^4.1.10",
-		"wrangler": "4.111.0"
-	}
+  "name": "bereal-gdpr-explorer-zip",
+  "type": "module",
+  "version": "2.0.0",
+  "packageManager": "pnpm@11.9.0",
+  "scripts": {
+    "astro": "astro",
+    "dev": "astro dev",
+    "dev:lan": "astro dev --host 0.0.0.0",
+    "build": "astro build",
+    "preview": "astro preview",
+    "preview:lan": "astro preview --host 0.0.0.0",
+    "check": "astro check",
+    "format": "prettier --write \"src/**/*.{ts,svelte,astro}\" \"*.{json,js,ts,mjs}\"",
+    "format:check": "prettier --check \"src/**/*.{ts,svelte,astro}\" \"*.{json,js,ts,mjs}\"",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@lucide/svelte": "^1.14.0",
+    "date-fns": "^4.1.0",
+    "jszip": "^3.10.1",
+    "pako": "^2.1.0",
+    "svelte": "^5.56.6"
+  },
+  "devDependencies": {
+    "@astrojs/check": "^0.9.9",
+    "@astrojs/svelte": "^8.1.2",
+    "@tailwindcss/vite": "^4.2.4",
+    "@types/pako": "^2.0.4",
+    "astro": "^6.4.8",
+    "daisyui": "^5.5.19",
+    "prettier": "^3.8.3",
+    "prettier-plugin-astro": "^0.14.1",
+    "prettier-plugin-svelte": "^3.5.1",
+    "tailwindcss": "^4.2.4",
+    "typescript": "^6.0.3",
+    "vitest": "^4.1.10",
+    "wrangler": "4.111.0"
+  }
 }

@@ -1,6 +1,6 @@
 <script lang="ts">
-import { ExternalLink } from "@lucide/svelte";
-import { APP_VERSION } from "@/lib/version";
+  import { ExternalLink } from "@lucide/svelte";
+  import { APP_VERSION } from "@/lib/version";
 </script>
 
 <header class="text-center mb-12">

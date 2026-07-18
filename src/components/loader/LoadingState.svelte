@@ -1,9 +1,9 @@
 <script lang="ts">
-import { Loader2 } from "@lucide/svelte";
+  import { Loader2 } from "@lucide/svelte";
 
-let { progress } = $props<{
-	progress: { total: number; loaded: number; message: string };
-}>();
+  let { progress } = $props<{
+    progress: { total: number; loaded: number; message: string };
+  }>();
 </script>
 
 <div class="flex flex-col items-center space-y-4">

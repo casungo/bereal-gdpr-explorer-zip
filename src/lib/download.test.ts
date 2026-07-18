@@ -251,8 +251,9 @@ describe("prepared download artifacts", () => {
       ]),
     );
     expect(
-      JSON.parse(await zip.file(`${firstFolder}/metadata.json`)!.async("string"))
-        .id,
+      JSON.parse(
+        await zip.file(`${firstFolder}/metadata.json`)!.async("string"),
+      ).id,
     ).toBe("first");
     expect(
       JSON.parse(
