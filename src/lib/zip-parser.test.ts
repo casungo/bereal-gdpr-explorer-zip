@@ -1,7 +1,8 @@
 import JSZip from "jszip";
 import pako from "pako";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { parseBeRealZip } from "./zip-parser";
+import { userMessageForArchiveError } from "./stores/app";
+import { ArchiveParseError, parseBeRealZip } from "./zip-parser";
 
 const bucketId = "abcdefghijklmnopqrstuvwxyz";
 
@@ -16,6 +17,7 @@ interface ArchiveOptions {
 	sections?: Record<string, unknown>;
 	media?: Record<string, Uint8Array>;
 	analyticsLines?: unknown[];
+	entryCount?: number;
 }
 
 async function makeArchive({
@@ -23,6 +25,7 @@ async function makeArchive({
 	sections = {},
 	media = {},
 	analyticsLines,
+	entryCount = 0,
 }: ArchiveOptions = {}): Promise<{ zipFile: File; gzFile: File | null }> {
 	const zip = new JSZip();
 	const root = wrapperPrefix ? zip.folder(wrapperPrefix) : zip;
@@ -37,11 +40,16 @@ async function makeArchive({
 	for (const [path, value] of Object.entries(media)) {
 		root.file(path, value);
 	}
+	for (let index = 0; index < entryCount; index++) {
+		root.file(`entry-${index}`, "");
+	}
 
 	const zipBuffer = await zip.generateAsync({ type: "arraybuffer" });
 	const gzFile = analyticsLines
 		? makeFile(
-				pako.gzip(analyticsLines.map((line) => JSON.stringify(line)).join("\n")),
+				pako.gzip(
+					analyticsLines.map((line) => JSON.stringify(line)).join("\n"),
+				),
 				"analytics.json.gz",
 				"application/gzip",
 			)
@@ -51,6 +59,11 @@ async function makeArchive({
 		zipFile: makeFile(zipBuffer, "bereal-export.zip", "application/zip"),
 		gzFile,
 	};
+}
+
+function withReportedSize(file: File, size: number): File {
+	Object.defineProperty(file, "size", { value: size });
+	return file;
 }
 
 function user(platform: "android" | "ios" = "android") {
@@ -149,7 +162,7 @@ describe("parseBeRealZip", () => {
 
 		expect(result.data.user?.username).toBe("alice");
 		expect(result.data.friends).toHaveLength(1);
-			expect(result.data.posts?.[0]).toMatchObject({
+		expect(result.data.posts?.[0]).toMatchObject({
 			id: "post-1",
 			primary: { path: "Photos/primary.jpg" },
 			secondary: { path: "Photos/secondary.jpg" },
@@ -265,9 +278,94 @@ describe("parseBeRealZip", () => {
 		const updates = onProgress.mock.calls.map(([progress]) => progress.loaded);
 		expect(updates[0]).toBeGreaterThan(0);
 		expect(updates.at(-1)).toBe(100);
-		expect(data.analytics).toEqual([
-			{ event_type: "app_open", event_time: 1 },
-		]);
+		expect(data.analytics).toEqual([{ event_type: "app_open", event_time: 1 }]);
+	});
+
+	it("accepts compressed inputs exactly at their byte limits", async () => {
+		const archive = await makeArchive({
+			sections: { "user.json": user() },
+			analyticsLines: [],
+		});
+		withReportedSize(archive.zipFile, 500 * 1024 * 1024);
+		withReportedSize(archive.gzFile!, 100 * 1024 * 1024);
+
+		await expect(
+			parseBeRealZip(archive.zipFile, archive.gzFile, vi.fn()),
+		).resolves.toMatchObject({ data: { user: { username: "alice" } } });
+	});
+
+	it("rejects a compressed input one byte over its limit before extraction", async () => {
+		const archive = await makeArchive({
+			media: { "Photos/photo.jpg": new Uint8Array([1]) },
+		});
+		withReportedSize(archive.zipFile, 500 * 1024 * 1024 + 1);
+
+		await expect(
+			parseBeRealZip(archive.zipFile, archive.gzFile, vi.fn()),
+		).rejects.toMatchObject({ code: "INPUT_TOO_LARGE" });
+		expect(URL.createObjectURL).not.toHaveBeenCalled();
+	});
+
+	it("rejects an archive one entry over its limit before extraction", async () => {
+		const archive = await makeArchive({ entryCount: 20_001 });
+
+		await expect(
+			parseBeRealZip(archive.zipFile, archive.gzFile, vi.fn()),
+		).rejects.toMatchObject({ code: "TOO_MANY_ENTRIES" });
+		expect(URL.createObjectURL).not.toHaveBeenCalled();
+	});
+
+	it("categorizes invalid gzip data without exposing a filename", async () => {
+		const archive = await makeArchive();
+		const invalidGzip = makeFile(
+			"not gzip",
+			"private-analytics.json.gz",
+			"application/gzip",
+		);
+
+		const error = await parseBeRealZip(
+			archive.zipFile,
+			invalidGzip,
+			vi.fn(),
+		).catch((caught: unknown) => caught);
+		expect(error).toMatchObject({ code: "INVALID_ANALYTICS" });
+		expect((error as Error).message).not.toContain("private-analytics");
+	});
+
+	it("revokes object URLs when later media extraction aborts", async () => {
+		const archive = await makeArchive({
+			wrapperPrefix: "bereal-export",
+			media: {
+				"Photos/first.jpg": new Uint8Array([1]),
+				"Photos/second.jpg": new Uint8Array([2]),
+			},
+		});
+		vi.mocked(URL.createObjectURL)
+			.mockImplementationOnce(() => "blob:created-before-failure")
+			.mockImplementationOnce(() => {
+				throw new Error("browser allocation failed");
+			});
+		const revokeObjectUrl = vi
+			.spyOn(URL, "revokeObjectURL")
+			.mockImplementation(() => undefined);
+
+		await expect(
+			parseBeRealZip(archive.zipFile, archive.gzFile, vi.fn()),
+		).rejects.toMatchObject({ code: "INVALID_ARCHIVE" });
+		expect(revokeObjectUrl).toHaveBeenCalledWith("blob:created-before-failure");
+	});
+
+	it("maps stable parser error codes to UI categories", () => {
+		expect(
+			userMessageForArchiveError(
+				new ArchiveParseError("ENTRY_TOO_LARGE", "internal detail"),
+			),
+		).toBe("This export exceeds the supported archive limits.");
+		expect(
+			userMessageForArchiveError(
+				new ArchiveParseError("INVALID_ANALYTICS", "internal detail"),
+			),
+		).toBe("The analytics file appears to be corrupted or invalid.");
 	});
 
 	it("rejects a non-gzip analytics sidecar", async () => {

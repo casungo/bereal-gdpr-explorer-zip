@@ -92,12 +92,18 @@ The application supports these files from your BeReal export:
 1. **App Analytics Data** (.json.gz) - Optional file that contains only app
    analytics
 
+For safe in-browser processing, compressed ZIP files are limited to 500 MiB
+and optional analytics GZ files to 100 MiB. ZIP archives may contain at most
+20,000 entries; each entry may declare up to 512 MiB expanded, with a 2 GiB
+aggregate expanded limit. Expanded analytics data is limited to 512 MiB.
+Unusually large exports may need to be inspected with another local tool.
+
 ### Upload Process
 
 1. Drag and drop the `.zip` file onto the upload area, or click to browse
 1. Optionally add the `.json.gz` file if you want analytics events
 1. The application will automatically detect and process the files
-1. Wait for the parsing to complete (may take some time for large archives)
+1. Keep the tab open while the supported archive is processed
 1. Start exploring your data!
 
 ## Media Exports

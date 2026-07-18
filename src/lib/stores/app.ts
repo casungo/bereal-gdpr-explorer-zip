@@ -1,7 +1,7 @@
 import { get, writable } from "svelte/store";
-import { demoData, demoMedia } from "@/lib/demo-data";
-import type { BeRealData, MediaMap, ProgressCallback } from "@/lib/types";
-import { parseBeRealZip } from "@/lib/zip-parser";
+import { demoData, demoMedia } from "../demo-data";
+import type { BeRealData, MediaMap, ProgressCallback } from "../types";
+import { ArchiveParseError, parseBeRealZip } from "../zip-parser";
 
 type ProgressInfo = { total: number; loaded: number; message: string };
 
@@ -14,6 +14,26 @@ interface AppStore {
 	loadFiles: (zipFile: File, gzFile: File | null) => Promise<void>;
 	loadDemoData: () => void;
 	resetData: () => void;
+}
+
+export function userMessageForArchiveError(error: unknown): string {
+	if (!(error instanceof ArchiveParseError)) {
+		return "An unknown error occurred during parsing.";
+	}
+
+	switch (error.code) {
+		case "INPUT_TOO_LARGE":
+		case "TOO_MANY_ENTRIES":
+		case "ENTRY_TOO_LARGE":
+		case "ARCHIVE_TOO_LARGE":
+			return "This export exceeds the supported archive limits.";
+		case "INVALID_FILE_TYPE":
+			return "Invalid file format. Please select the correct BeReal export files.";
+		case "INVALID_ANALYTICS":
+			return "The analytics file appears to be corrupted or invalid.";
+		case "INVALID_ARCHIVE":
+			return "The ZIP file appears to be corrupted or invalid. Please try again.";
+	}
 }
 
 function createAppStore(): AppStore {
@@ -63,26 +83,7 @@ function createAppStore(): AppStore {
 			data.set(result.data);
 			media.set(result.media || {});
 		} catch (e) {
-			const errorMessage =
-				e instanceof Error
-					? e.message
-					: "An unknown error occurred during parsing.";
-
-			let userMessage = errorMessage;
-			if (errorMessage.includes("File size exceeds")) {
-				userMessage = "File is too large. Please use files smaller than 500MB.";
-			} else if (errorMessage.includes("Invalid file type")) {
-				userMessage =
-					"Invalid file format. Please select the correct BeReal export files.";
-			} else if (errorMessage.includes("Failed to read file")) {
-				userMessage =
-					"Failed to read the file. Please try again or select a different file.";
-			} else if (errorMessage.includes("Could not access zip contents")) {
-				userMessage =
-					"The ZIP file appears to be corrupted or invalid. Please try again.";
-			}
-
-			error.set(userMessage);
+			error.set(userMessageForArchiveError(e));
 			data.set(null);
 			media.set(null);
 		} finally {

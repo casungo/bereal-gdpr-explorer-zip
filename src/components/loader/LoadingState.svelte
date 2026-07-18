@@ -16,7 +16,7 @@ let { progress } = $props<{
       max="100"
     ></progress>
     <p class="text-sm opacity-70 mt-1">
-      Please keep this tab open. Large archives may take a minute.
+      Please keep this tab open while the supported archive is processed.
     </p>
   </div>
 </div>

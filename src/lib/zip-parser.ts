@@ -11,12 +11,54 @@ import type {
 } from "@/lib/types";
 
 const PROGRESS_UPDATE_INTERVAL = 5;
-const PARALLEL_CHUNK_SIZE = 100;
+const MEDIA_EXTRACTION_CONCURRENCY = 8;
+const MEBIBYTE = 1024 * 1024;
+const GIBIBYTE = 1024 * MEBIBYTE;
+const MAX_ZIP_INPUT_BYTES = 500 * MEBIBYTE;
+const MAX_ANALYTICS_GZIP_INPUT_BYTES = 100 * MEBIBYTE;
+const MAX_ARCHIVE_ENTRIES = 20_000;
+const MAX_ENTRY_UNCOMPRESSED_BYTES = 512 * MEBIBYTE;
+const MAX_ARCHIVE_UNCOMPRESSED_BYTES = 2 * GIBIBYTE;
+const MAX_ANALYTICS_UNCOMPRESSED_BYTES = 512 * MEBIBYTE;
 const ALLOWED_MIME_TYPES = [
 	"application/zip",
 	"application/x-gzip",
 	"application/gzip",
 ] as const;
+
+export type ArchiveErrorCode =
+	| "INVALID_FILE_TYPE"
+	| "INPUT_TOO_LARGE"
+	| "TOO_MANY_ENTRIES"
+	| "ENTRY_TOO_LARGE"
+	| "ARCHIVE_TOO_LARGE"
+	| "INVALID_ARCHIVE"
+	| "INVALID_ANALYTICS";
+
+export class ArchiveParseError extends Error {
+	constructor(
+		public readonly code: ArchiveErrorCode,
+		message: string,
+	) {
+		super(message);
+		this.name = "ArchiveParseError";
+	}
+}
+
+function archiveError(code: ArchiveErrorCode, message: string): never {
+	throw new ArchiveParseError(code, message);
+}
+
+interface ZipObjectWithDeclaredSize extends JSZip.JSZipObject {
+	_data?: { uncompressedSize?: number };
+}
+
+function declaredUncompressedSize(entry: JSZip.JSZipObject): number | null {
+	const size = (entry as ZipObjectWithDeclaredSize)._data?.uncompressedSize;
+	return typeof size === "number" && Number.isSafeInteger(size) && size >= 0
+		? size
+		: null;
+}
 
 async function readFileAsArrayBuffer(file: File): Promise<ArrayBuffer> {
 	if (
@@ -26,7 +68,10 @@ async function readFileAsArrayBuffer(file: File): Promise<ArrayBuffer> {
 				file.name.endsWith(type.includes("zip") ? ".zip" : ".gz"),
 		)
 	) {
-		throw new Error(`Invalid file type. Expected .zip or .gz files.`);
+		archiveError(
+			"INVALID_FILE_TYPE",
+			"Invalid file type. Expected a ZIP or GZ file.",
+		);
 	}
 
 	if (typeof file.arrayBuffer === "function") {
@@ -37,7 +82,7 @@ async function readFileAsArrayBuffer(file: File): Promise<ArrayBuffer> {
 		const reader = new FileReader();
 		reader.onload = () => resolve(reader.result as ArrayBuffer);
 		reader.onerror = () =>
-			reject(new Error(`Failed to read file: ${file.name}`));
+			reject(new ArchiveParseError("INVALID_ARCHIVE", "Failed to read file."));
 		reader.readAsArrayBuffer(file);
 	});
 }
@@ -308,11 +353,22 @@ export async function parseBeRealZip(
 	}
 
 	if (!zipFile.name.endsWith(".zip")) {
-		throw new Error("First file must be a .zip file");
+		archiveError("INVALID_FILE_TYPE", "First file must be a .zip file");
 	}
 
 	if (gzFile && !gzFile.name.endsWith(".gz")) {
-		throw new Error("Second file must be a .gz file");
+		archiveError("INVALID_FILE_TYPE", "Second file must be a .gz file");
+	}
+
+	if (zipFile.size > MAX_ZIP_INPUT_BYTES) {
+		archiveError("INPUT_TOO_LARGE", "ZIP input exceeds the 500 MiB limit.");
+	}
+
+	if (gzFile && gzFile.size > MAX_ANALYTICS_GZIP_INPUT_BYTES) {
+		archiveError(
+			"INPUT_TOO_LARGE",
+			"Analytics input exceeds the 100 MiB limit.",
+		);
 	}
 
 	onProgress({ total: 100, loaded: 2, message: "Starting data parsing..." });
@@ -328,15 +384,81 @@ export async function parseBeRealZip(
 		message: "Decompressing and parsing data...",
 	});
 
-	const rawZip = await JSZip.loadAsync(zipBuffer);
+	let rawZip: JSZip;
+	try {
+		rawZip = await JSZip.loadAsync(zipBuffer);
+	} catch {
+		archiveError("INVALID_ARCHIVE", "The ZIP archive is invalid or corrupted.");
+	}
 
-	const analyticsData = gzBuffer
-		? pako
-				.ungzip(gzBuffer, { to: "string" })
-				.split("\n")
-				.filter((line) => line.trim() !== "")
-				.map((line) => JSON.parse(line))
-		: [];
+	const archiveEntries = Object.values(rawZip.files);
+	if (archiveEntries.length > MAX_ARCHIVE_ENTRIES) {
+		archiveError(
+			"TOO_MANY_ENTRIES",
+			"The ZIP archive contains more than 20,000 entries.",
+		);
+	}
+
+	let declaredArchiveBytes = 0;
+	for (const entry of archiveEntries) {
+		if (entry.dir) continue;
+		const declaredBytes = declaredUncompressedSize(entry);
+		if (declaredBytes === null) continue;
+		if (declaredBytes > MAX_ENTRY_UNCOMPRESSED_BYTES) {
+			archiveError(
+				"ENTRY_TOO_LARGE",
+				"A ZIP entry exceeds the 512 MiB expanded limit.",
+			);
+		}
+		declaredArchiveBytes += declaredBytes;
+		if (declaredArchiveBytes > MAX_ARCHIVE_UNCOMPRESSED_BYTES) {
+			archiveError(
+				"ARCHIVE_TOO_LARGE",
+				"The ZIP archive exceeds the 2 GiB expanded limit.",
+			);
+		}
+	}
+
+	const analyticsData: unknown[] = [];
+	if (gzBuffer) {
+		let analyticsText: string;
+		try {
+			analyticsText = pako.ungzip(gzBuffer, { to: "string" });
+		} catch {
+			archiveError(
+				"INVALID_ANALYTICS",
+				"The analytics GZ file is invalid or corrupted.",
+			);
+		}
+		let lineStart = 0;
+		let lineCount = 0;
+		let analyticsBytes = 0;
+		for (let index = 0; index <= analyticsText.length; index++) {
+			if (index !== analyticsText.length && analyticsText[index] !== "\n")
+				continue;
+			const rawLine = analyticsText.slice(lineStart, index);
+			lineCount++;
+			analyticsBytes +=
+				new Blob([rawLine]).size + (index < analyticsText.length ? 1 : 0);
+			if (analyticsBytes > MAX_ANALYTICS_UNCOMPRESSED_BYTES) {
+				archiveError(
+					"ARCHIVE_TOO_LARGE",
+					"Expanded analytics data exceeds the 512 MiB limit.",
+				);
+			}
+			const line = rawLine.trim();
+			lineStart = index + 1;
+			if (!line) continue;
+			try {
+				analyticsData.push(JSON.parse(line));
+			} catch {
+				archiveError(
+					"INVALID_ANALYTICS",
+					`Analytics data contains invalid JSON at line ${lineCount}.`,
+				);
+			}
+		}
+	}
 
 	const topLevelDir = Object.keys(rawZip.files)
 		.find((p) => p.endsWith("/") && p.split("/").length === 2)
@@ -347,7 +469,9 @@ export async function parseBeRealZip(
 		throw new Error("Could not access zip contents.");
 	}
 
-	const data: BeRealData = { analytics: analyticsData };
+	const data: BeRealData = {
+		analytics: analyticsData as BeRealData["analytics"],
+	};
 	const media: MediaMap = {};
 
 	onProgress({ total: 100, loaded: 25, message: "Parsing JSON files..." });
@@ -587,68 +711,88 @@ export async function parseBeRealZip(
 
 	const totalMedia = mediaFiles.length;
 	let loadedMedia = 0;
+	const createdObjectUrls = new Set<string>();
 
 	const processMediaFiles = async (
 		files: JSZip.JSZipObject[],
 	): Promise<void> => {
-		for (let i = 0; i < files.length; i += PARALLEL_CHUNK_SIZE) {
-			const chunk = files.slice(i, i + PARALLEL_CHUNK_SIZE);
+		for (let i = 0; i < files.length; i += MEDIA_EXTRACTION_CONCURRENCY) {
+			const chunk = files.slice(i, i + MEDIA_EXTRACTION_CONCURRENCY);
 			let completedInChunk = 0;
 
 			const chunkPromises = chunk.map(async (file) => {
-				try {
-					const blob = await file.async("blob");
-					const result = { path: file.name, url: URL.createObjectURL(blob) };
+				const blob = await file.async("blob");
+				const url = URL.createObjectURL(blob);
+				createdObjectUrls.add(url);
+				const result = { path: file.name, url };
 
-					completedInChunk++;
-					const currentLoaded = loadedMedia + completedInChunk;
+				completedInChunk++;
+				const currentLoaded = loadedMedia + completedInChunk;
 
-					if (
-						currentLoaded % PROGRESS_UPDATE_INTERVAL === 0 ||
-						currentLoaded === totalMedia
-					) {
-						onProgress({
-							total: 100,
-							loaded: 60 + Math.round((currentLoaded / totalMedia) * 40),
-							message: `Extracting media ${currentLoaded}/${totalMedia}`,
-						});
-					}
-
-					return result;
-				} catch (e) {
-					return null;
+				if (
+					currentLoaded % PROGRESS_UPDATE_INTERVAL === 0 ||
+					currentLoaded === totalMedia
+				) {
+					onProgress({
+						total: 100,
+						loaded: 60 + Math.round((currentLoaded / totalMedia) * 40),
+						message: `Extracting media ${currentLoaded}/${totalMedia}`,
+					});
 				}
+
+				return result;
 			});
 
-			const results = await Promise.all(chunkPromises);
+			const settledResults = await Promise.allSettled(chunkPromises);
+			const failedResult = settledResults.find(
+				(result) => result.status === "rejected",
+			);
+			if (failedResult?.status === "rejected") {
+				throw failedResult.reason;
+			}
+			const results = settledResults
+				.filter(
+					(
+						result,
+					): result is PromiseFulfilledResult<
+						Awaited<(typeof chunkPromises)[number]>
+					> => result.status === "fulfilled",
+				)
+				.map((result) => result.value);
 
 			results.forEach((result) => {
-				if (result) {
-					media[result.path] = result.url;
-					const relativePath =
-						topLevelDir && result.path.startsWith(`${topLevelDir}/`)
-							? result.path.slice(topLevelDir.length + 1)
-							: result.path;
-					if (relativePath !== result.path) {
-						media[relativePath] = result.url;
-					}
+				media[result.path] = result.url;
+				const relativePath =
+					topLevelDir && result.path.startsWith(`${topLevelDir}/`)
+						? result.path.slice(topLevelDir.length + 1)
+						: result.path;
+				if (relativePath !== result.path) {
+					media[relativePath] = result.url;
+				}
 
-					const normalizedPath = normalizePath(relativePath);
-					if (normalizedPath !== relativePath) {
-						media[normalizedPath] = result.url;
-					}
+				const normalizedPath = normalizePath(relativePath);
+				if (normalizedPath !== relativePath) {
+					media[normalizedPath] = result.url;
 				}
 			});
 
 			loadedMedia += chunk.length;
 
-			if (i + PARALLEL_CHUNK_SIZE < files.length) {
+			if (i + MEDIA_EXTRACTION_CONCURRENCY < files.length) {
 				await new Promise((resolve) => setTimeout(resolve, 1));
 			}
 		}
 	};
 
-	await processMediaFiles(mediaFiles);
+	try {
+		await processMediaFiles(mediaFiles);
+	} catch {
+		createdObjectUrls.forEach((url) => URL.revokeObjectURL(url));
+		archiveError(
+			"INVALID_ARCHIVE",
+			"Could not extract media from the archive.",
+		);
+	}
 
 	onProgress({ total: 100, loaded: 100, message: "Done!" });
 
