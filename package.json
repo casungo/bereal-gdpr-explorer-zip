@@ -12,6 +12,7 @@
 		"preview:lan": "astro preview --host 0.0.0.0",
 		"check": "astro check",
 		"format": "prettier --write \"src/**/*.{ts,svelte,astro}\" \"*.{json,js,ts,mjs}\"",
+		"format:check": "prettier --check \"src/**/*.{ts,svelte,astro}\" \"*.{json,js,ts,mjs}\"",
 		"test": "vitest run"
 	},
 	"dependencies": {
@@ -29,6 +30,7 @@
 		"astro": "^6.4.8",
 		"daisyui": "^5.5.19",
 		"prettier": "^3.8.3",
+		"prettier-plugin-astro": "^0.14.1",
 		"prettier-plugin-svelte": "^3.5.1",
 		"tailwindcss": "^4.2.4",
 		"typescript": "^6.0.3",
