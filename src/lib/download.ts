@@ -504,12 +504,18 @@ function triggerDownload(blob: Blob, filename: string, lastModified?: Date) {
   URL.revokeObjectURL(url);
 }
 
-export async function downloadPosts(
+export interface PreparedDownloadArtifact {
+  blob: Blob;
+  filename: string;
+  lastModified?: Date;
+}
+
+export async function prepareDownloadArtifact(
   posts: (Post | Memory)[],
   mediaMap: MediaMap,
   request: DownloadRequest,
   zipName: string,
-) {
+): Promise<PreparedDownloadArtifact> {
   const selection = selectionFromRequest(request);
   if (!hasSelectedMedia(selection)) {
     throw new Error("Choose at least one item to download");
@@ -536,13 +542,13 @@ export async function downloadPosts(
       const sourceBlob = await getBlobFromUrl(primaryUrl);
       const filename = `${zipName}-primary.${await detectedMediaExtension(primaryMedia, sourceBlob)}`;
       const blob = await prepareMediaBlob(sourceBlob, filename, post);
-      triggerDownload(blob, filename, getPostDate(post));
+      return { blob, filename, lastModified: getPostDate(post) };
     } else if (request === "secondary") {
       assertImageMedia(secondaryMedia, "Secondary");
       const sourceBlob = await getBlobFromUrl(secondaryUrl);
       const filename = `${zipName}-secondary.${await detectedMediaExtension(secondaryMedia, sourceBlob)}`;
       const blob = await prepareMediaBlob(sourceBlob, filename, post);
-      triggerDownload(blob, filename, getPostDate(post));
+      return { blob, filename, lastModified: getPostDate(post) };
     } else if (request === "merged") {
       assertImageMedia(primaryMedia, "Primary");
       assertImageMedia(secondaryMedia, "Secondary");
@@ -551,7 +557,11 @@ export async function downloadPosts(
         `${zipName}-merged.jpg`,
         post,
       );
-      triggerDownload(blob, `${zipName}-merged.jpg`, getPostDate(post));
+      return {
+        blob,
+        filename: `${zipName}-merged.jpg`,
+        lastModified: getPostDate(post),
+      };
     } else if (request === "video") {
       if (!btsMedia || !mediaMap[btsMedia.path]) {
         throw new Error("No video is available for this post");
@@ -559,8 +569,10 @@ export async function downloadPosts(
       assertVideoMedia(btsMedia, "Video");
       const blob = await getBlobFromUrl(mediaMap[btsMedia.path]);
       const filename = `${zipName}-video.${await detectedMediaExtension(btsMedia, blob, "mp4")}`;
-      triggerDownload(blob, filename, getPostDate(post));
+      return { blob, filename, lastModified: getPostDate(post) };
     }
+
+    throw new Error("Unsupported single-file download request");
   } else {
     const zip = new JSZip();
     if (
@@ -594,7 +606,9 @@ export async function downloadPosts(
         assertVideoMedia(btsMedia, "Video");
         const videoBlob = await getBlobFromUrl(mediaMap[btsMedia.path]);
         const videoFilename = `video.${await detectedMediaExtension(btsMedia, videoBlob, "mp4")}`;
-        postFolder?.file(videoFilename, videoBlob, { date: fileDate });
+        postFolder?.file(videoFilename, await videoBlob.arrayBuffer(), {
+          date: fileDate,
+        });
         postFolder?.file(`video.xmp`, createXmpSidecar(post), {
           date: fileDate,
         });
@@ -621,7 +635,9 @@ export async function downloadPosts(
           primaryFilename,
           post,
         );
-        postFolder?.file(primaryFilename, preparedBlob, { date: fileDate });
+        postFolder?.file(primaryFilename, await preparedBlob.arrayBuffer(), {
+          date: fileDate,
+        });
         if (await needsXmpSidecar(primaryBlob)) {
           postFolder?.file(`primary.xmp`, createXmpSidecar(post), {
             date: fileDate,
@@ -636,7 +652,9 @@ export async function downloadPosts(
           secondaryFilename,
           post,
         );
-        postFolder?.file(secondaryFilename, preparedBlob, { date: fileDate });
+        postFolder?.file(secondaryFilename, await preparedBlob.arrayBuffer(), {
+          date: fileDate,
+        });
         if (await needsXmpSidecar(secondaryBlob)) {
           postFolder?.file(`secondary.xmp`, createXmpSidecar(post), {
             date: fileDate,
@@ -654,10 +672,27 @@ export async function downloadPosts(
           "merged.jpg",
           post,
         );
-        postFolder?.file(`merged.jpg`, mergedBlob, { date: fileDate });
+        postFolder?.file(`merged.jpg`, await mergedBlob.arrayBuffer(), {
+          date: fileDate,
+        });
       }
     }
     const zipBlob = await zip.generateAsync({ type: "blob" });
-    triggerDownload(zipBlob, `${zipName}.zip`);
+    return { blob: zipBlob, filename: `${zipName}.zip` };
   }
+}
+
+export async function downloadPosts(
+  posts: (Post | Memory)[],
+  mediaMap: MediaMap,
+  request: DownloadRequest,
+  zipName: string,
+) {
+  const artifact = await prepareDownloadArtifact(
+    posts,
+    mediaMap,
+    request,
+    zipName,
+  );
+  triggerDownload(artifact.blob, artifact.filename, artifact.lastModified);
 }
