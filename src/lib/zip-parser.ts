@@ -20,6 +20,18 @@ const MAX_ARCHIVE_ENTRIES = 20_000;
 const MAX_ENTRY_UNCOMPRESSED_BYTES = 512 * MEBIBYTE;
 const MAX_ARCHIVE_UNCOMPRESSED_BYTES = 2 * GIBIBYTE;
 const MAX_ANALYTICS_UNCOMPRESSED_BYTES = 512 * MEBIBYTE;
+const EXPORT_METADATA_FILES = new Set([
+	"user.json",
+	"friends.json",
+	"friend-requests.json",
+	"posts.json",
+	"memories.json",
+	"comments.json",
+	"realmojis.json",
+	"push-settings.json",
+	"push-tokens.json",
+	"terms.json",
+]);
 const ALLOWED_MIME_TYPES = [
 	"application/zip",
 	"application/x-gzip",
@@ -58,6 +70,43 @@ function declaredUncompressedSize(entry: JSZip.JSZipObject): number | null {
 	return typeof size === "number" && Number.isSafeInteger(size) && size >= 0
 		? size
 		: null;
+}
+
+function detectExportRoot(files: Record<string, JSZip.JSZipObject>): string {
+	const scores = new Map<string, number>();
+
+	for (const file of Object.values(files)) {
+		if (file.dir) continue;
+		const segments = file.name.split("/");
+		const metadataFile = segments.at(-1);
+		if (
+			!metadataFile ||
+			!EXPORT_METADATA_FILES.has(metadataFile) ||
+			segments.length > 2
+		) {
+			continue;
+		}
+		const candidate = segments.length === 1 ? "" : segments[0];
+		scores.set(candidate, (scores.get(candidate) ?? 0) + 1);
+	}
+
+	const bestScore = Math.max(0, ...scores.values());
+	if (bestScore === 0) {
+		archiveError(
+			"INVALID_ARCHIVE",
+			"No supported BeReal metadata files were found.",
+		);
+	}
+	const bestRoots = [...scores.entries()].filter(
+		([, score]) => score === bestScore,
+	);
+	if (bestRoots.length !== 1) {
+		archiveError(
+			"INVALID_ARCHIVE",
+			"Multiple BeReal export roots contain the same amount of supported metadata.",
+		);
+	}
+	return bestRoots[0][0];
 }
 
 async function readFileAsArrayBuffer(file: File): Promise<ArrayBuffer> {
@@ -460,10 +509,8 @@ export async function parseBeRealZip(
 		}
 	}
 
-	const topLevelDir = Object.keys(rawZip.files)
-		.find((p) => p.endsWith("/") && p.split("/").length === 2)
-		?.split("/")[0];
-	const zip = topLevelDir ? rawZip.folder(topLevelDir)! : rawZip;
+	const exportRoot = detectExportRoot(rawZip.files);
+	const zip = exportRoot ? rawZip.folder(exportRoot)! : rawZip;
 
 	if (!zip) {
 		throw new Error("Could not access zip contents.");
@@ -698,8 +745,8 @@ export async function parseBeRealZip(
 
 	const mediaFiles = Object.values(zip.files).filter((file) => {
 		const relativePath =
-			topLevelDir && file.name.startsWith(`${topLevelDir}/`)
-				? file.name.slice(topLevelDir.length + 1)
+			exportRoot && file.name.startsWith(`${exportRoot}/`)
+				? file.name.slice(exportRoot.length + 1)
 				: file.name;
 		return (
 			!file.dir &&
@@ -763,8 +810,8 @@ export async function parseBeRealZip(
 			results.forEach((result) => {
 				media[result.path] = result.url;
 				const relativePath =
-					topLevelDir && result.path.startsWith(`${topLevelDir}/`)
-						? result.path.slice(topLevelDir.length + 1)
+					exportRoot && result.path.startsWith(`${exportRoot}/`)
+						? result.path.slice(exportRoot.length + 1)
 						: result.path;
 				if (relativePath !== result.path) {
 					media[relativePath] = result.url;

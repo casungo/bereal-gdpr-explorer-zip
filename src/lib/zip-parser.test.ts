@@ -16,6 +16,8 @@ interface ArchiveOptions {
 	wrapperPrefix?: string;
 	sections?: Record<string, unknown>;
 	media?: Record<string, Uint8Array>;
+	absoluteSections?: Record<string, unknown>;
+	leadingDirectories?: string[];
 	analyticsLines?: unknown[];
 	entryCount?: number;
 }
@@ -24,10 +26,15 @@ async function makeArchive({
 	wrapperPrefix,
 	sections = {},
 	media = {},
+	absoluteSections = {},
+	leadingDirectories = [],
 	analyticsLines,
 	entryCount = 0,
 }: ArchiveOptions = {}): Promise<{ zipFile: File; gzFile: File | null }> {
 	const zip = new JSZip();
+	for (const path of leadingDirectories) {
+		zip.folder(path);
+	}
 	const root = wrapperPrefix ? zip.folder(wrapperPrefix) : zip;
 
 	if (!root) {
@@ -39,6 +46,9 @@ async function makeArchive({
 	}
 	for (const [path, value] of Object.entries(media)) {
 		root.file(path, value);
+	}
+	for (const [path, value] of Object.entries(absoluteSections)) {
+		zip.file(path, JSON.stringify(value));
 	}
 	for (let index = 0; index < entryCount; index++) {
 		root.file(`entry-${index}`, "");
@@ -177,15 +187,102 @@ describe("parseBeRealZip", () => {
 		expect(result.data.analytics).toEqual([]);
 	});
 
+	it("parses flat metadata, conversations, and root media together", async () => {
+		const mediaPath = `Photos/${bucketId}/flat.jpg`;
+		const archive = await makeArchive({
+			sections: {
+				"user.json": user(),
+				"conversations/thread-flat/chat_log.json": {
+					messages: [
+						{
+							userId: "user-1",
+							message: "flat message",
+							createdAt: "2026-01-05T10:01:00.000Z",
+						},
+					],
+				},
+			},
+			media: { [mediaPath]: new Uint8Array([1]) },
+		});
+
+		const { data, media } = await parseBeRealZip(
+			archive.zipFile,
+			archive.gzFile,
+			vi.fn(),
+		);
+
+		expect(data.user?.username).toBe("alice");
+		expect(data.conversations?.[0]?.messages[0]?.content).toBe("flat message");
+		expect(media[mediaPath]).toBe(media["Photos/flat.jpg"]);
+	});
+
+	it("ignores a root __MACOSX directory beside a wrapped export", async () => {
+		const archive = await makeArchive({
+			leadingDirectories: ["__MACOSX"],
+			wrapperPrefix: "bereal-export",
+			sections: { "user.json": user() },
+		});
+
+		await expect(
+			parseBeRealZip(archive.zipFile, archive.gzFile, vi.fn()),
+		).resolves.toMatchObject({ data: { user: { username: "alice" } } });
+	});
+
+	it("does not let leading directory entries override flat metadata", async () => {
+		const archive = await makeArchive({
+			leadingDirectories: ["Photos", "profile-pictures"],
+			sections: { "user.json": user() },
+		});
+
+		await expect(
+			parseBeRealZip(archive.zipFile, archive.gzFile, vi.fn()),
+		).resolves.toMatchObject({ data: { user: { username: "alice" } } });
+	});
+
+	it("rejects archives without supported metadata", async () => {
+		const archive = await makeArchive({
+			media: { "Photos/photo.jpg": new Uint8Array([1]) },
+		});
+
+		await expect(
+			parseBeRealZip(archive.zipFile, archive.gzFile, vi.fn()),
+		).rejects.toThrow("No supported BeReal metadata files were found.");
+	});
+
+	it("rejects two equally complete wrapped exports", async () => {
+		const archive = await makeArchive({
+			absoluteSections: {
+				"export-one/user.json": user(),
+				"export-two/user.json": { ...user(), username: "bob" },
+			},
+		});
+
+		await expect(
+			parseBeRealZip(archive.zipFile, archive.gzFile, vi.fn()),
+		).rejects.toThrow(
+			"Multiple BeReal export roots contain the same amount of supported metadata.",
+		);
+	});
+
 	it("leaves every optional JSON section absent when the archive omits it", async () => {
-		const archive = await makeArchive({ wrapperPrefix: "bereal-export" });
+		const archive = await makeArchive({
+			wrapperPrefix: "bereal-export",
+			sections: { "user.json": user() },
+		});
 		const { data } = await parseBeRealZip(
 			archive.zipFile,
 			archive.gzFile,
 			vi.fn(),
 		);
 
-		expect(data).toEqual({ analytics: [], conversations: [] });
+		expect(data).toMatchObject({
+			analytics: [],
+			conversations: [],
+			user: { username: "alice" },
+		});
+		expect(data.friends).toBeUndefined();
+		expect(data.posts).toBeUndefined();
+		expect(data.memories).toBeUndefined();
 	});
 
 	it.each([
@@ -209,6 +306,7 @@ describe("parseBeRealZip", () => {
 		const plainPath = "Photos/plain.jpg";
 		const archive = await makeArchive({
 			wrapperPrefix: "bereal-export",
+			sections: { "user.json": user() },
 			media: {
 				[bucketPath]: new Uint8Array([1]),
 				[plainPath]: new Uint8Array([2]),
@@ -232,6 +330,7 @@ describe("parseBeRealZip", () => {
 		const archive = await makeArchive({
 			wrapperPrefix: "bereal-export",
 			sections: {
+				"user.json": user(),
 				"conversations/thread-1/chat_log.json": {
 					participants: [{ id: "user-1", username: "alice" }],
 					messages: [
@@ -335,6 +434,7 @@ describe("parseBeRealZip", () => {
 	it("revokes object URLs when later media extraction aborts", async () => {
 		const archive = await makeArchive({
 			wrapperPrefix: "bereal-export",
+			sections: { "user.json": user() },
 			media: {
 				"Photos/first.jpg": new Uint8Array([1]),
 				"Photos/second.jpg": new Uint8Array([2]),
