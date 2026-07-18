@@ -2,6 +2,7 @@
 	"name": "bereal-gdpr-explorer-zip",
 	"type": "module",
 	"version": "2.0.0",
+	"packageManager": "pnpm@11.9.0",
 	"scripts": {
 		"astro": "astro",
 		"dev": "astro dev",
