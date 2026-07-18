@@ -49,7 +49,7 @@
 		},
 	];
 
-	const filteredPosts = $derived(() => {
+	const filteredPosts = $derived.by(() => {
 		let filtered = [...posts];
 
 		if (dateRange?.from) {
@@ -91,8 +91,8 @@
 		return filtered;
 	});
 
-	const postsByMonth = $derived(() => {
-		return filteredPosts().reduce(
+	const postsByMonth = $derived.by(() => {
+		return filteredPosts.reduce(
 			(acc, post) => {
 				const monthKey = format(
 					startOfMonth(new Date(post.takenAt)),
@@ -108,12 +108,14 @@
 		);
 	});
 
-	const allMonthKeys = $derived(() => Object.keys(postsByMonth()));
+	const allMonthKeys = $derived(Object.keys(postsByMonth));
 	let openMonths = $state<string[]>([]);
+	let monthsInitialized = $state(false);
 
 	$effect(() => {
-		if (openMonths.length === 0) {
-			openMonths = allMonthKeys();
+		if (!monthsInitialized && allMonthKeys.length > 0) {
+			openMonths = allMonthKeys;
+			monthsInitialized = true;
 		}
 	});
 
@@ -139,13 +141,13 @@
 	}
 
 	function handleExpandAll() {
-		openMonths = allMonthKeys();
+		openMonths = allMonthKeys;
 	}
 
 	function handleDownloadAll() {
 		downloadDialogState = {
 			open: true,
-			posts: filteredPosts(),
+			posts: filteredPosts,
 			defaultName: "bereal-posts-all",
 		};
 	}
@@ -163,7 +165,7 @@
 		e.stopPropagation();
 		downloadDialogState = {
 			open: true,
-			posts: postsByMonth()[monthKey],
+			posts: postsByMonth[monthKey],
 			defaultName: `bereal-posts-${monthKey}`,
 		};
 	}
@@ -197,13 +199,13 @@
 			onExpandAll={handleExpandAll}
 			onDownloadAll={handleDownloadAll}
 			showVisibilityFilter={true}
-			resultSummary={`${filteredPosts().length} of ${posts.length} posts`}
-			downloadDisabled={filteredPosts().length === 0}
+			resultSummary={`${filteredPosts.length} of ${posts.length} posts`}
+			downloadDisabled={filteredPosts.length === 0}
 		/>
 
 		<div class="space-y-4">
-			{#each allMonthKeys() as monthKey (monthKey)}
-				{@const monthPosts = postsByMonth()[monthKey]}
+			{#each allMonthKeys as monthKey (monthKey)}
+				{@const monthPosts = postsByMonth[monthKey]}
 				<div class="card bg-base-100 shadow-xl overflow-hidden">
 					<div
 						class="flex flex-col gap-3 p-4 hover:bg-base-200 cursor-pointer sm:flex-row sm:items-center sm:justify-between"
@@ -361,7 +363,7 @@
 			{/each}
 		</div>
 
-		{#if filteredPosts().length === 0}
+		{#if filteredPosts.length === 0}
 			<EmptyState
 				icon={Camera}
 				title="No posts match these filters"

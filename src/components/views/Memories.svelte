@@ -40,7 +40,7 @@
 		},
 	];
 
-	const filteredMemories = $derived(() => {
+	const filteredMemories = $derived.by(() => {
 		let filtered = [...memories];
 
 		if (dateRange?.from) {
@@ -67,8 +67,8 @@
 		return filtered;
 	});
 
-	const memoriesByMonth = $derived(() => {
-		return filteredMemories().reduce(
+	const memoriesByMonth = $derived.by(() => {
+		return filteredMemories.reduce(
 			(acc, memory) => {
 				const monthKey = format(
 					startOfMonth(new Date(memory.takenTime)),
@@ -84,12 +84,14 @@
 		);
 	});
 
-	const allMonthKeys = $derived(() => Object.keys(memoriesByMonth()));
+	const allMonthKeys = $derived(Object.keys(memoriesByMonth));
 	let openMonths = $state<string[]>([]);
+	let monthsInitialized = $state(false);
 
 	$effect(() => {
-		if (openMonths.length === 0) {
-			openMonths = allMonthKeys();
+		if (!monthsInitialized && allMonthKeys.length > 0) {
+			openMonths = allMonthKeys;
+			monthsInitialized = true;
 		}
 	});
 
@@ -110,13 +112,13 @@
 	}
 
 	function handleExpandAll() {
-		openMonths = allMonthKeys();
+		openMonths = allMonthKeys;
 	}
 
 	function handleDownloadAll() {
 		downloadDialogState = {
 			open: true,
-			posts: filteredMemories(),
+			posts: filteredMemories,
 			defaultName: "bereal-memories-all",
 		};
 	}
@@ -137,7 +139,7 @@
 		e.stopPropagation();
 		downloadDialogState = {
 			open: true,
-			posts: memoriesByMonth()[monthKey],
+			posts: memoriesByMonth[monthKey],
 			defaultName: `bereal-memories-${monthKey}`,
 		};
 	}
@@ -169,20 +171,25 @@
 			onExpandAll={handleExpandAll}
 			onDownloadAll={handleDownloadAll}
 			showVisibilityFilter={false}
-			resultSummary={`${filteredMemories().length} of ${memories.length} memories`}
-			downloadDisabled={filteredMemories().length === 0}
+			resultSummary={`${filteredMemories.length} of ${memories.length} memories`}
+			downloadDisabled={filteredMemories.length === 0}
 		/>
 
 		<div class="space-y-4">
-			{#each allMonthKeys() as monthKey (monthKey)}
-				{@const monthMemories = memoriesByMonth()[monthKey]}
+			{#each allMonthKeys as monthKey (monthKey)}
+				{@const monthMemories = memoriesByMonth[monthKey]}
 				<div class="card bg-base-100 shadow-xl overflow-hidden">
 					<div
 						class="flex flex-col gap-3 p-4 hover:bg-base-200 cursor-pointer sm:flex-row sm:items-center sm:justify-between"
 						role="button"
 						tabindex="0"
 						onclick={() => toggleMonth(monthKey)}
-						onkeydown={(e) => e.key === "Enter" && toggleMonth(monthKey)}
+						onkeydown={(e) => {
+							if (e.key === "Enter" || e.key === " ") {
+								e.preventDefault();
+								toggleMonth(monthKey);
+							}
+						}}
 					>
 						<div class="flex min-w-0 items-center gap-2">
 							<div
@@ -287,7 +294,7 @@
 			{/each}
 		</div>
 
-		{#if filteredMemories().length === 0}
+		{#if filteredMemories.length === 0}
 			<EmptyState
 				icon={Clock}
 				title="No memories match this date range"
