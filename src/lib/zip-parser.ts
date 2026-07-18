@@ -6,10 +6,14 @@ import type {
   ChatMessage,
   Conversation,
   ImportWarning,
+  ImportCompatibilityReport,
+  ImportSectionReport,
+  ImportSectionName,
   MediaMap,
   ProgressCallback,
   PushSettings,
 } from "@/lib/types";
+import { APP_VERSION } from "./version";
 
 const PROGRESS_UPDATE_INTERVAL = 5;
 const MEDIA_EXTRACTION_CONCURRENCY = 8;
@@ -146,6 +150,8 @@ interface ValidatedValue<T> {
 interface SectionResult<T> {
   value?: T;
   state: "missing" | "valid" | "invalid";
+  acceptedRecords: number;
+  skippedRecords: number;
 }
 
 async function parseJsonSection<T>(
@@ -157,7 +163,7 @@ async function parseJsonSection<T>(
 ): Promise<SectionResult<T>> {
   const file = zip.file(path);
   if (!file) {
-    return { state: "missing" };
+    return { state: "missing", acceptedRecords: 0, skippedRecords: 0 };
   }
   let parsed: unknown;
   try {
@@ -165,17 +171,31 @@ async function parseJsonSection<T>(
     parsed = JSON.parse(content);
   } catch {
     warnings.push({ section, code: "MALFORMED_JSON" });
-    return { state: "invalid" };
+    return { state: "invalid", acceptedRecords: 0, skippedRecords: 0 };
   }
   const validated = validate(parsed);
   if (!validated) {
     warnings.push({ section, code: "INVALID_SHAPE" });
-    return { state: "invalid" };
+    return {
+      state: "invalid",
+      acceptedRecords: 0,
+      skippedRecords: Array.isArray(parsed) ? parsed.length : 1,
+    };
   }
   if (validated.discardedRecords) {
     warnings.push({ section, code: "INVALID_RECORDS" });
   }
-  return { value: validated.value, state: "valid" };
+  const acceptedRecords = Array.isArray(validated.value)
+    ? validated.value.length
+    : 1;
+  return {
+    value: validated.value,
+    state: "valid",
+    acceptedRecords,
+    skippedRecords: Array.isArray(parsed)
+      ? Math.max(0, parsed.length - acceptedRecords)
+      : 0,
+  };
 }
 
 interface RawUser {
@@ -781,7 +801,12 @@ export async function parseBeRealZip(
   zipFile: File,
   gzFile: File | null,
   onProgress: ProgressCallback,
-): Promise<{ data: BeRealData; media: MediaMap; warnings: ImportWarning[] }> {
+): Promise<{
+  data: BeRealData;
+  media: MediaMap;
+  warnings: ImportWarning[];
+  report: ImportCompatibilityReport;
+}> {
   if (!zipFile) {
     throw new Error("A zip file is required");
   }
@@ -859,8 +884,8 @@ export async function parseBeRealZip(
 
   const warnings: ImportWarning[] = [];
   const analyticsData: AnalyticsEvent[] = [];
+  let invalidAnalyticsRecords = 0;
   if (gzBuffer) {
-    let invalidAnalyticsRecords = false;
     let analyticsText: string;
     try {
       analyticsText = pako.ungzip(gzBuffer, { to: "string" });
@@ -894,7 +919,7 @@ export async function parseBeRealZip(
         if (isAnalyticsEvent(event)) {
           analyticsData.push(event);
         } else {
-          invalidAnalyticsRecords = true;
+          invalidAnalyticsRecords++;
         }
       } catch {
         archiveError(
@@ -903,7 +928,7 @@ export async function parseBeRealZip(
         );
       }
     }
-    if (invalidAnalyticsRecords) {
+    if (invalidAnalyticsRecords > 0) {
       warnings.push({ section: "analytics", code: "INVALID_RECORDS" });
     }
   }
@@ -1214,6 +1239,9 @@ export async function parseBeRealZip(
 
   onProgress({ total: 100, loaded: 50, message: "Parsing conversations..." });
   data.conversations = await parseConversations(rawZip, warnings);
+  const conversationFileCount = Object.keys(rawZip.files).filter((name) =>
+    /^(?:[^/]+\/)?conversations\/[^/]+\/chat_log\.json$/.test(name),
+  ).length;
 
   onProgress({ total: 100, loaded: 60, message: "Extracting media..." });
 
@@ -1317,5 +1345,84 @@ export async function parseBeRealZip(
 
   onProgress({ total: 100, loaded: 100, message: "Done!" });
 
-  return { data, media, warnings };
+  const sectionReport = <T>(
+    section: ImportSectionName,
+    result: SectionResult<T>,
+  ): ImportSectionReport => ({
+    section,
+    status:
+      result.state === "valid"
+        ? "recognized"
+        : result.state === "missing"
+          ? "missing"
+          : "invalid",
+    acceptedRecords: result.acceptedRecords,
+    skippedRecords: result.skippedRecords,
+    warningCodes: warnings
+      .filter((warning) => warning.section === section)
+      .map((warning) => warning.code),
+  });
+  const relativeEntries = Object.values(zip.files).map((file) => ({
+    file,
+    name:
+      exportRoot && file.name.startsWith(`${exportRoot}/`)
+        ? file.name.slice(exportRoot.length + 1)
+        : file.name,
+  }));
+  const unknownJsonFiles = relativeEntries.filter(
+    ({ file, name }) =>
+      !file.dir &&
+      name.endsWith(".json") &&
+      !EXPORT_METADATA_FILES.has(name) &&
+      !/^conversations\/[^/]+\/chat_log\.json$/.test(name),
+  ).length;
+  const analyticsWarnings = warnings
+    .filter((warning) => warning.section === "analytics")
+    .map((warning) => warning.code);
+  const conversationWarnings = warnings
+    .filter((warning) => warning.section === "conversations")
+    .map((warning) => warning.code);
+  const report: ImportCompatibilityReport = {
+    appVersion: APP_VERSION,
+    parserVersion: "1",
+    sections: [
+      sectionReport("user", userResult),
+      sectionReport("friends", friendsResult),
+      sectionReport("friendRequests", friendRequestsResult),
+      sectionReport("posts", postsResult),
+      sectionReport("memories", memoriesResult),
+      sectionReport("comments", commentsResult),
+      sectionReport("realmojis", realmojisResult),
+      sectionReport("pushSettings", pushSettingsResult),
+      sectionReport("pushTokens", pushTokensResult),
+      sectionReport("terms", termsResult),
+      {
+        section: "conversations",
+        status:
+          conversationFileCount === 0
+            ? "missing"
+            : data.conversations.length > 0
+              ? "recognized"
+              : "invalid",
+        acceptedRecords: data.conversations.length,
+        skippedRecords: Math.max(
+          0,
+          conversationFileCount - data.conversations.length,
+        ),
+        warningCodes: conversationWarnings,
+      },
+      {
+        section: "analytics",
+        status: gzFile ? "recognized" : "missing",
+        acceptedRecords: analyticsData.length,
+        skippedRecords: invalidAnalyticsRecords,
+        warningCodes: analyticsWarnings,
+      },
+    ],
+    recognizedMedia: mediaFiles.length,
+    invalidMedia: 0,
+    unknownJsonFiles,
+  };
+
+  return { data, media, warnings, report };
 }

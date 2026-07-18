@@ -194,6 +194,38 @@ export interface ImportWarning {
   code: "MALFORMED_JSON" | "INVALID_SHAPE" | "INVALID_RECORDS";
 }
 
+export type ImportSectionStatus = "recognized" | "missing" | "invalid";
+export type ImportSectionName =
+  | "user"
+  | "friends"
+  | "friendRequests"
+  | "posts"
+  | "memories"
+  | "comments"
+  | "realmojis"
+  | "pushSettings"
+  | "pushTokens"
+  | "terms"
+  | "conversations"
+  | "analytics";
+
+export interface ImportSectionReport {
+  section: ImportSectionName;
+  status: ImportSectionStatus;
+  acceptedRecords: number;
+  skippedRecords: number;
+  warningCodes: ImportWarning["code"][];
+}
+
+export interface ImportCompatibilityReport {
+  appVersion: string;
+  parserVersion: string;
+  sections: ImportSectionReport[];
+  recognizedMedia: number;
+  invalidMedia: number;
+  unknownJsonFiles: number;
+}
+
 export type MediaMap = Record<string, string>;
 
 export type UnixTimestamp = number;

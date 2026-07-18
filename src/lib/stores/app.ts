@@ -1,6 +1,11 @@
 import { get, writable } from "svelte/store";
 import { demoData, demoMedia } from "../demo-data";
-import type { BeRealData, MediaMap, ProgressCallback } from "../types";
+import type {
+  BeRealData,
+  ImportCompatibilityReport,
+  MediaMap,
+  ProgressCallback,
+} from "../types";
 import { ArchiveParseError, parseBeRealZip } from "../zip-parser";
 
 type ProgressInfo = { total: number; loaded: number; message: string };
@@ -8,6 +13,7 @@ type ProgressInfo = { total: number; loaded: number; message: string };
 interface AppStore {
   data: import("svelte/store").Writable<BeRealData | null>;
   media: import("svelte/store").Writable<MediaMap | null>;
+  report: import("svelte/store").Writable<ImportCompatibilityReport | null>;
   isLoading: import("svelte/store").Writable<boolean>;
   progress: import("svelte/store").Writable<ProgressInfo>;
   error: import("svelte/store").Writable<string | null>;
@@ -41,6 +47,7 @@ export function userMessageForArchiveError(error: unknown): string {
 function createAppStore(): AppStore {
   const data = writable<BeRealData | null>(null);
   const media = writable<MediaMap | null>(null);
+  const report = writable<ImportCompatibilityReport | null>(null);
   const isLoading = writable<boolean>(false);
   const progress = writable<ProgressInfo>({
     total: 100,
@@ -50,6 +57,7 @@ function createAppStore(): AppStore {
   const error = writable<string | null>(null);
 
   async function loadFiles(zipFile: File, gzFile: File | null): Promise<void> {
+    report.set(null);
     if (!zipFile) {
       error.set("Please select a ZIP file.");
       return;
@@ -82,12 +90,14 @@ function createAppStore(): AppStore {
         throw new Error("No valid data could be extracted from the files.");
       }
 
+      report.set(result.report);
       data.set(result.data);
       media.set(result.media || {});
     } catch (e) {
       error.set(userMessageForArchiveError(e));
       data.set(null);
       media.set(null);
+      report.set(null);
     } finally {
       isLoading.set(false);
     }
@@ -105,6 +115,7 @@ function createAppStore(): AppStore {
 
     data.set(null);
     media.set(null);
+    report.set(null);
     error.set(null);
     progress.set({ total: 100, loaded: 0, message: "" });
   }
@@ -118,6 +129,7 @@ function createAppStore(): AppStore {
   return {
     data,
     media,
+    report,
     isLoading,
     progress,
     error,

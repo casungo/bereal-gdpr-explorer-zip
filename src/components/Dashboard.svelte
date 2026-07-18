@@ -28,11 +28,17 @@
   import Terms from "@/components/views/Terms.svelte";
   import Conversations from "@/components/views/Conversations.svelte";
   import Analytics from "@/components/views/Analytics.svelte";
-  import type { BeRealData, MediaMap } from "@/lib/types";
+  import ImportReport from "@/components/ui/ImportReport.svelte";
+  import type {
+    BeRealData,
+    ImportCompatibilityReport,
+    MediaMap,
+  } from "@/lib/types";
 
-  let { data, media, resetData } = $props<{
+  let { data, media, report, resetData } = $props<{
     data: BeRealData;
     media: MediaMap;
+    report: ImportCompatibilityReport | null;
     resetData: () => void;
   }>();
 
@@ -112,6 +118,10 @@
   {#snippet sidebar()}
     <Sidebar {activeTab} {setActiveTab} {resetData} />
   {/snippet}
+
+  {#if report}
+    <ImportReport {report} />
+  {/if}
 
   {#if !data || !media}
     <div class="flex items-center justify-center h-full">

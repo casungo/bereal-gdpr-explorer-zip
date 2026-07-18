@@ -192,6 +192,116 @@ describe("parseBeRealZip", () => {
     expect(result.data.analytics).toEqual([]);
   });
 
+  it("reports complete and unknown archive content without values", async () => {
+    const archive = await makeArchive({
+      sections: {
+        "user.json": user(),
+        "friends.json": [],
+        "posts.json": [
+          {
+            id: "private-post-id",
+            primary: image("Photos/primary.jpg"),
+            secondary: image("Photos/secondary.jpg"),
+            takenAt: "2026-01-03T10:00:00.000Z",
+          },
+        ],
+        "private-unknown.json": { privateValue: "do-not-report" },
+      },
+      media: {
+        "Photos/primary.jpg": new Uint8Array([1]),
+        "Photos/secondary.jpg": new Uint8Array([2]),
+      },
+    });
+
+    const { report } = await parseBeRealZip(
+      archive.zipFile,
+      archive.gzFile,
+      vi.fn(),
+    );
+
+    expect(report).toMatchObject({
+      appVersion: "2.0.0",
+      parserVersion: "1",
+      recognizedMedia: 2,
+      invalidMedia: 0,
+      unknownJsonFiles: 1,
+    });
+    expect(report.sections.map(({ section }) => section)).toEqual([
+      "user",
+      "friends",
+      "friendRequests",
+      "posts",
+      "memories",
+      "comments",
+      "realmojis",
+      "pushSettings",
+      "pushTokens",
+      "terms",
+      "conversations",
+      "analytics",
+    ]);
+    expect(report.sections.find(({ section }) => section === "user")).toEqual({
+      section: "user",
+      status: "recognized",
+      acceptedRecords: 1,
+      skippedRecords: 0,
+      warningCodes: [],
+    });
+    expect(
+      report.sections.find(({ section }) => section === "friends"),
+    ).toMatchObject({ status: "recognized", acceptedRecords: 0 });
+    expect(JSON.stringify(report)).not.toContain("private-post-id");
+    expect(JSON.stringify(report)).not.toContain("do-not-report");
+    expect(JSON.stringify(report)).not.toContain("private-unknown");
+  });
+
+  it("distinguishes missing, malformed, and mixed optional sections", async () => {
+    const archive = await makeArchive({
+      sections: {
+        "user.json": user(),
+        "comments.json": [
+          {
+            id: "comment-1",
+            postId: "post-1",
+            userId: "user-1",
+            username: "alice",
+            content: "private-comment-text",
+            createdAt: "2026-01-03T10:00:00.000Z",
+          },
+          { privateValue: "skipped-value" },
+        ],
+      },
+      rawSections: { "friends.json": "{" },
+    });
+
+    const { report } = await parseBeRealZip(
+      archive.zipFile,
+      archive.gzFile,
+      vi.fn(),
+    );
+    const bySection = Object.fromEntries(
+      report.sections.map((section) => [section.section, section]),
+    );
+
+    expect(bySection.friends).toEqual({
+      section: "friends",
+      status: "invalid",
+      acceptedRecords: 0,
+      skippedRecords: 0,
+      warningCodes: ["MALFORMED_JSON"],
+    });
+    expect(bySection.comments).toEqual({
+      section: "comments",
+      status: "recognized",
+      acceptedRecords: 1,
+      skippedRecords: 1,
+      warningCodes: ["INVALID_RECORDS"],
+    });
+    expect(bySection.memories).toMatchObject({ status: "missing" });
+    expect(JSON.stringify(report)).not.toContain("private-comment-text");
+    expect(JSON.stringify(report)).not.toContain("skipped-value");
+  });
+
   it("parses flat metadata, conversations, and root media together", async () => {
     const mediaPath = `Photos/${bucketId}/flat.jpg`;
     const archive = await makeArchive({

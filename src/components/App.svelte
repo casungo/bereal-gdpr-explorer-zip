@@ -3,7 +3,7 @@
   import Dashboard from "@/components/Dashboard.svelte";
   import { appStore } from "@/lib/stores/app";
 
-  const { data, media } = appStore;
+  const { data, media, report } = appStore;
 
   let showDashboard = $state(false);
 
@@ -18,7 +18,7 @@
 </script>
 
 {#if showDashboard && $data && $media}
-  <Dashboard data={$data} media={$media} {resetData} />
+  <Dashboard data={$data} media={$media} report={$report} {resetData} />
 {:else}
   <DataLoader />
 {/if}
