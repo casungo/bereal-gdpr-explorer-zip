@@ -196,9 +196,11 @@ export interface ImportWarning {
 
 export type MediaMap = Record<string, string>;
 
+export type UnixTimestamp = number;
+
 export interface AnalyticsEvent {
   event_type: string;
-  event_time: number;
+  event_time: UnixTimestamp;
   event_id?: number;
   user_id?: string;
   client_event_time?: number;

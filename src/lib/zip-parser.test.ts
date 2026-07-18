@@ -553,7 +553,10 @@ describe("parseBeRealZip", () => {
   it("reports progress above zero and finishes at 100", async () => {
     const archive = await makeArchive({
       sections: { "user.json": user() },
-      analyticsLines: [{ event_type: "app_open", event_time: 1 }],
+      analyticsLines: [
+        { event_type: "app_open", event_time: 1_704_067_200 },
+        { event_type: "app_close", event_time: 1_704_067_200_000 },
+      ],
     });
     const onProgress = vi.fn();
 
@@ -566,7 +569,10 @@ describe("parseBeRealZip", () => {
     const updates = onProgress.mock.calls.map(([progress]) => progress.loaded);
     expect(updates[0]).toBeGreaterThan(0);
     expect(updates.at(-1)).toBe(100);
-    expect(data.analytics).toEqual([{ event_type: "app_open", event_time: 1 }]);
+    expect(data.analytics).toEqual([
+      { event_type: "app_open", event_time: 1_704_067_200 },
+      { event_type: "app_close", event_time: 1_704_067_200_000 },
+    ]);
   });
 
   it("filters malformed analytics records with a value-free warning", async () => {
