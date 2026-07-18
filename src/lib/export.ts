@@ -1,28 +1,24 @@
-function convertToCSV(data: Record<string, unknown>[]): string {
+function encodeCsvCell(value: unknown): string {
+	let cell = value === null || value === undefined ? "" : String(value);
+	if (/^\s*[=+\-@]/.test(cell)) {
+		cell = `'${cell}`;
+	}
+	return `"${cell.replace(/"/g, '""')}"`;
+}
+
+export function convertToCSV(data: Record<string, unknown>[]): string {
 	if (!data || data.length === 0) {
 		return "";
 	}
 	const headers = Object.keys(data[0]);
-	const csvRows = [headers.join(",")];
+	const csvRows = [headers.map(encodeCsvCell).join(",")];
 
 	for (const row of data) {
-		const values = headers.map((header) => {
-			let cell =
-				row[header] === null || row[header] === undefined
-					? ""
-					: String(row[header]);
-			if (typeof cell === "string") {
-				cell = cell.replace(/"/g, '""');
-				if (cell.includes(",")) {
-					cell = `"${cell}"`;
-				}
-			}
-			return cell;
-		});
+		const values = headers.map((header) => encodeCsvCell(row[header]));
 		csvRows.push(values.join(","));
 	}
 
-	return csvRows.join("\n");
+	return csvRows.join("\r\n");
 }
 
 export function exportToCsv(
@@ -40,5 +36,6 @@ export function exportToCsv(
 		document.body.appendChild(link);
 		link.click();
 		document.body.removeChild(link);
+		setTimeout(() => URL.revokeObjectURL(url), 0);
 	}
 }
