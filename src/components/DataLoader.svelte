@@ -11,31 +11,26 @@ const { isLoading, progress, error, loadFiles, loadDemoData } = appStore;
 
 let zipFile: File | null = $state(null);
 let gzFile: File | null = $state(null);
-let analysisCalled: boolean = $state(false);
 
 function handleFiles(files: FileList | null) {
 	if (!files) return;
 	const filesArray = Array.from(files);
-	const newZip = filesArray.find((f) => f.name.endsWith(".zip")) || null;
-	const newGz = filesArray.find((f) => f.name.endsWith(".gz")) || null;
+	const newZip = filesArray.find((f) => f.name.toLowerCase().endsWith(".zip"));
+	const newGz = filesArray.find((f) => f.name.toLowerCase().endsWith(".gz"));
 
-	if (newZip) zipFile = newZip;
-	if (newGz) gzFile = newGz;
-	if (newZip || newGz) analysisCalled = false;
-}
-
-function handleAnalyze() {
-	if (zipFile && !$isLoading && !analysisCalled) {
-		analysisCalled = true;
-		loadFiles(zipFile, gzFile);
+	if (newZip) {
+		zipFile = newZip;
+		gzFile = newGz ?? null;
+	} else if (newGz) {
+		gzFile = newGz;
 	}
 }
 
-$effect(() => {
-	if (zipFile) {
-		handleAnalyze();
+async function handleAnalyze() {
+	if (zipFile && !$isLoading) {
+		await loadFiles(zipFile, gzFile);
 	}
-});
+}
 </script>
 
 <div
@@ -86,6 +81,13 @@ $effect(() => {
         >
           <button
             class="btn btn-primary w-full sm:w-auto"
+            onclick={handleAnalyze}
+            disabled={!zipFile || $isLoading}
+          >
+            Analyze selected files
+          </button>
+          <button
+            class="btn btn-outline w-full sm:w-auto"
             onclick={loadDemoData}
           >
             Explore demo data
@@ -94,7 +96,7 @@ $effect(() => {
             <p
               class="text-center text-sm opacity-70"
             >
-              Analytics data was not selected, so analytics charts will be empty.
+              Analytics is optional. Analyze this ZIP now, or add the analytics file first.
             </p>
           {/if}
         </div>

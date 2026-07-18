@@ -38,6 +38,7 @@ function handleDrop(e: DragEvent) {
 function handleFileChange(e: Event) {
 	const target = e.target as HTMLInputElement;
 	onFilesSelected(target.files);
+	target.value = "";
 }
 </script>
 
