@@ -510,6 +510,17 @@ export interface PreparedDownloadArtifact {
   lastModified?: Date;
 }
 
+export class MissingDownloadMediaError extends Error {
+  readonly code = "MISSING_MEDIA";
+
+  constructor(readonly itemCount: number) {
+    super(
+      `Missing required image media for ${itemCount} ${itemCount === 1 ? "item" : "items"}.`,
+    );
+    this.name = "MissingDownloadMediaError";
+  }
+}
+
 export async function prepareDownloadArtifact(
   posts: (Post | Memory)[],
   mediaMap: MediaMap,
@@ -530,26 +541,47 @@ export async function prepareDownloadArtifact(
     const post = posts[0];
     const { primaryMedia, secondaryMedia, btsMedia } = getPostMedia(post);
 
-    if (!primaryMedia || !secondaryMedia) {
-      throw new Error("Missing required media for download");
-    }
-
-    const primaryUrl = mediaMap[primaryMedia.path];
-    const secondaryUrl = mediaMap[secondaryMedia.path];
-
     if (request === "primary") {
+      if (
+        !primaryMedia ||
+        !isImageMedia(primaryMedia) ||
+        !mediaMap[primaryMedia.path]
+      ) {
+        throw new MissingDownloadMediaError(1);
+      }
+      const primaryUrl = mediaMap[primaryMedia.path];
       assertImageMedia(primaryMedia, "Primary");
       const sourceBlob = await getBlobFromUrl(primaryUrl);
       const filename = `${zipName}-primary.${await detectedMediaExtension(primaryMedia, sourceBlob)}`;
       const blob = await prepareMediaBlob(sourceBlob, filename, post);
       return { blob, filename, lastModified: getPostDate(post) };
     } else if (request === "secondary") {
+      if (
+        !secondaryMedia ||
+        !isImageMedia(secondaryMedia) ||
+        !mediaMap[secondaryMedia.path]
+      ) {
+        throw new MissingDownloadMediaError(1);
+      }
+      const secondaryUrl = mediaMap[secondaryMedia.path];
       assertImageMedia(secondaryMedia, "Secondary");
       const sourceBlob = await getBlobFromUrl(secondaryUrl);
       const filename = `${zipName}-secondary.${await detectedMediaExtension(secondaryMedia, sourceBlob)}`;
       const blob = await prepareMediaBlob(sourceBlob, filename, post);
       return { blob, filename, lastModified: getPostDate(post) };
     } else if (request === "merged") {
+      if (
+        !primaryMedia ||
+        !secondaryMedia ||
+        !isImageMedia(primaryMedia) ||
+        !isImageMedia(secondaryMedia) ||
+        !mediaMap[primaryMedia.path] ||
+        !mediaMap[secondaryMedia.path]
+      ) {
+        throw new MissingDownloadMediaError(1);
+      }
+      const primaryUrl = mediaMap[primaryMedia.path];
+      const secondaryUrl = mediaMap[secondaryMedia.path];
       assertImageMedia(primaryMedia, "Primary");
       assertImageMedia(secondaryMedia, "Secondary");
       const blob = await prepareMediaBlob(
@@ -574,7 +606,23 @@ export async function prepareDownloadArtifact(
 
     throw new Error("Unsupported single-file download request");
   } else {
-    const zip = new JSZip();
+    const items = posts.map((post) => {
+      const { primaryMedia, secondaryMedia, btsMedia } = getPostMedia(post);
+      const fileDate = getPostDate(post);
+      return {
+        post,
+        primaryMedia,
+        secondaryMedia,
+        btsMedia,
+        primaryUrl: primaryMedia ? mediaMap[primaryMedia.path] : undefined,
+        secondaryUrl: secondaryMedia
+          ? mediaMap[secondaryMedia.path]
+          : undefined,
+        fileDate,
+        timestamp: format(fileDate, "yyyy-MM-dd-HH-mm-ss"),
+      };
+    });
+
     if (
       isVideoOnly(selection) &&
       downloadableVideoCount(posts, mediaMap) === 0
@@ -582,20 +630,49 @@ export async function prepareDownloadArtifact(
       throw new Error("No videos are available for this selection");
     }
 
-    for (const post of posts) {
-      const { primaryMedia, secondaryMedia, btsMedia } = getPostMedia(post);
+    const missingItemCount = items.filter(
+      ({ primaryMedia, secondaryMedia, primaryUrl, secondaryUrl }) =>
+        ((selection.primary || selection.merged) &&
+          (!primaryMedia || !isImageMedia(primaryMedia) || !primaryUrl)) ||
+        ((selection.secondary || selection.merged) &&
+          (!secondaryMedia || !isImageMedia(secondaryMedia) || !secondaryUrl)),
+    ).length;
+    if (missingItemCount > 0) {
+      throw new MissingDownloadMediaError(missingItemCount);
+    }
 
-      if (!primaryMedia || !secondaryMedia) {
-        continue;
-      }
+    const includedItems = isVideoOnly(selection)
+      ? items.filter(({ post }) => canDownloadVideo(post, mediaMap))
+      : items;
+    const timestampCounts = new Map<string, number>();
+    for (const { timestamp } of includedItems) {
+      timestampCounts.set(timestamp, (timestampCounts.get(timestamp) ?? 0) + 1);
+    }
+    const timestampOccurrences = new Map<string, number>();
+    const itemsWithFolders = includedItems.map((item) => {
+      const occurrence = (timestampOccurrences.get(item.timestamp) ?? 0) + 1;
+      timestampOccurrences.set(item.timestamp, occurrence);
+      return {
+        ...item,
+        folderName:
+          timestampCounts.get(item.timestamp) === 1
+            ? item.timestamp
+            : `${item.timestamp}-${occurrence}`,
+      };
+    });
 
-      if (isVideoOnly(selection) && !canDownloadVideo(post, mediaMap)) {
-        continue;
-      }
-
-      const dateStr = format(getPostDate(post), "yyyy-MM-dd-HH-mm-ss");
-      const postFolder = zip.folder(dateStr);
-      const fileDate = getPostDate(post);
+    const zip = new JSZip();
+    for (const {
+      post,
+      primaryMedia,
+      secondaryMedia,
+      btsMedia,
+      primaryUrl,
+      secondaryUrl,
+      fileDate,
+      folderName,
+    } of itemsWithFolders) {
+      const postFolder = zip.folder(folderName);
       postFolder?.file(
         `metadata.json`,
         JSON.stringify(getPostMetadata(post), null, 2),
@@ -621,10 +698,10 @@ export async function prepareDownloadArtifact(
       const needsSecondaryBlob = selection.secondary;
       const needsMerged = selection.merged;
       const primaryBlob = needsPrimaryBlob
-        ? await getBlobFromUrl(mediaMap[primaryMedia.path])
+        ? await getBlobFromUrl(primaryUrl!)
         : null;
       const secondaryBlob = needsSecondaryBlob
-        ? await getBlobFromUrl(mediaMap[secondaryMedia.path])
+        ? await getBlobFromUrl(secondaryUrl!)
         : null;
 
       if (selection.primary && primaryBlob) {
@@ -665,10 +742,7 @@ export async function prepareDownloadArtifact(
         assertImageMedia(primaryMedia, "Primary");
         assertImageMedia(secondaryMedia, "Secondary");
         const mergedBlob = await prepareMediaBlob(
-          await createMergedImage(
-            mediaMap[primaryMedia.path],
-            mediaMap[secondaryMedia.path],
-          ),
+          await createMergedImage(primaryUrl!, secondaryUrl!),
           "merged.jpg",
           post,
         );

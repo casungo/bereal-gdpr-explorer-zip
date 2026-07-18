@@ -38,8 +38,8 @@ const btsVideo: Media = {
 
 const jpegBytes = new Uint8Array([0xff, 0xd8, 0xff, 0xd9]);
 const webpBytes = new Uint8Array([
-  0x52, 0x49, 0x46, 0x46, 0x18, 0x00, 0x00, 0x00, 0x57, 0x45, 0x42, 0x50,
-  0x56, 0x50, 0x38, 0x20,
+  0x52, 0x49, 0x46, 0x46, 0x18, 0x00, 0x00, 0x00, 0x57, 0x45, 0x42, 0x50, 0x56,
+  0x50, 0x38, 0x20,
 ]);
 const mp4Bytes = new Uint8Array([
   0x00, 0x00, 0x00, 0x18, 0x66, 0x74, 0x79, 0x70, 0x69, 0x73, 0x6f, 0x6d,
@@ -65,6 +65,7 @@ function containsBytes(bytes: Uint8Array, expected: number[]): boolean {
 
 afterEach(() => {
   vi.unstubAllGlobals();
+  vi.restoreAllMocks();
 });
 
 function makePost(overrides: Partial<Post> = {}): Post {
@@ -176,6 +177,90 @@ describe("media extension detection", () => {
 });
 
 describe("prepared download artifacts", () => {
+  it("rejects a bulk selection atomically when required media is missing", async () => {
+    const missingSecondary = {
+      ...secondaryImage,
+      path: "Photos/missing-secondary.jpg",
+    };
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+    const folderSpy = vi.spyOn(JSZip.prototype, "folder");
+
+    await expect(
+      prepareDownloadArtifact(
+        [
+          makePost({ id: "complete" }),
+          makePost({ id: "incomplete", secondary: missingSecondary }),
+        ],
+        {
+          [primaryImage.path]: "blob:primary",
+          [secondaryImage.path]: "blob:secondary",
+        },
+        "both",
+        "atomic",
+      ),
+    ).rejects.toMatchObject({
+      code: "MISSING_MEDIA",
+      itemCount: 1,
+      message: "Missing required image media for 1 item.",
+    });
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(folderSpy).not.toHaveBeenCalled();
+  });
+
+  it("rejects a missing single image before fetching an undefined URL", async () => {
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+
+    await expect(
+      prepareDownloadArtifact([makePost()], {}, "primary", "single"),
+    ).rejects.toMatchObject({ code: "MISSING_MEDIA", itemCount: 1 });
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("uses deterministic suffixes for equal timestamps without losing posts", async () => {
+    const first = makePost({ id: "first" });
+    const second = makePost({ id: "second" });
+    mockMediaFetch({
+      "blob:primary": new Blob([jpegBytes], { type: "image/jpeg" }),
+      "blob:secondary": new Blob([jpegBytes], { type: "image/jpeg" }),
+    });
+
+    const artifact = await prepareDownloadArtifact(
+      [first, second],
+      {
+        [primaryImage.path]: "blob:primary",
+        [secondaryImage.path]: "blob:secondary",
+      },
+      "both",
+      "collisions",
+    );
+    const zip = await JSZip.loadAsync(await artifact.blob.arrayBuffer());
+    const timestamp = format(new Date(first.takenAt), "yyyy-MM-dd-HH-mm-ss");
+    const firstFolder = `${timestamp}-1`;
+    const secondFolder = `${timestamp}-2`;
+
+    expect(Object.keys(zip.files)).toEqual(
+      expect.arrayContaining([
+        `${firstFolder}/metadata.json`,
+        `${firstFolder}/primary.jpg`,
+        `${firstFolder}/secondary.jpg`,
+        `${secondFolder}/metadata.json`,
+        `${secondFolder}/primary.jpg`,
+        `${secondFolder}/secondary.jpg`,
+      ]),
+    );
+    expect(
+      JSON.parse(await zip.file(`${firstFolder}/metadata.json`)!.async("string"))
+        .id,
+    ).toBe("first");
+    expect(
+      JSON.parse(
+        await zip.file(`${secondFolder}/metadata.json`)!.async("string"),
+      ).id,
+    ).toBe("second");
+  });
+
   it("builds a selected-media ZIP with metadata, original extensions, sidecars, and dates", async () => {
     const post = makePost({
       caption: "Synthetic caption",
@@ -229,7 +314,9 @@ describe("prepared download artifacts", () => {
       new Date(post.takenAt).getTime(),
     );
     for (const name of names.filter((name) => !name.endsWith("/"))) {
-      expect(zip.file(name)!.date.getTime()).toBe(new Date(post.takenAt).getTime());
+      expect(zip.file(name)!.date.getTime()).toBe(
+        new Date(post.takenAt).getTime(),
+      );
     }
 
     const expectedXmp = `<?xml version="1.0" encoding="UTF-8"?>
@@ -320,9 +407,7 @@ describe("prepared download artifacts", () => {
       "unlocated",
     );
     const unlocatedBytes = new Uint8Array(await unlocated.blob.arrayBuffer());
-    expect([...unlocatedBytes.slice(0, 4)]).toEqual([
-      0xff, 0xd8, 0xff, 0xe1,
-    ]);
+    expect([...unlocatedBytes.slice(0, 4)]).toEqual([0xff, 0xd8, 0xff, 0xe1]);
     expect(containsBytes(unlocatedBytes, [0x88, 0x25])).toBe(false);
   });
 
