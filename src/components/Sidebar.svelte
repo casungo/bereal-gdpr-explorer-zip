@@ -160,14 +160,10 @@
 			<a
 				href="https://ko-fi.com/G2G11QJ91M"
 				target="_blank"
-				class="flex justify-center hover:opacity-80 transition-opacity"
+				rel="noopener noreferrer"
+				class="btn btn-outline btn-sm w-full"
 			>
-				<img
-					height="36"
-					style="border:0px;height:36px;"
-					src="https://storage.ko-fi.com/cdn/kofi4.png?v=6"
-					alt="Buy Me a Coffee at ko-fi.com"
-				/>
+				Support on Ko-fi
 			</a>
 			<button
 				class="btn btn-ghost w-full justify-start gap-3 text-error clear-data-btn"
