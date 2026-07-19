@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { onMount, onDestroy } from "svelte";
   import { Camera, Maximize2, Repeat2, X } from "@lucide/svelte";
 
   type Position = "top-left" | "top-right" | "bottom-left" | "bottom-right";
@@ -23,8 +22,13 @@
   let isPrimaryMain = $state(true);
   let position: Position = $state("top-left");
   let isDragging = $state(false);
+  let dragPosition = $state({ x: 0, y: 0 });
+  let dragOffset = { x: 0, y: 0 };
+  let dragOrigin = { x: 0, y: 0 };
+  let didDrag = false;
   let isFullscreen = $state(false);
   let containerRef: HTMLDivElement;
+  let secondaryRef: HTMLDivElement;
 
   const mainSrc = $derived(isPrimaryMain ? primarySrc : secondarySrc);
   const secondarySrcToDisplay = $derived(
@@ -56,30 +60,57 @@
     }
   }
 
-  function getCoordinates(e: { clientX: number; clientY: number }) {
-    return { x: e.clientX, y: e.clientY };
-  }
-
-  function handleDragStart(e: MouseEvent | TouchEvent) {
+  function handleDragStart(e: PointerEvent) {
     e.preventDefault();
     e.stopPropagation();
+    const previewRect = secondaryRef.getBoundingClientRect();
+    const containerRect = containerRef.getBoundingClientRect();
+
+    dragOffset = {
+      x: e.clientX - previewRect.left,
+      y: e.clientY - previewRect.top,
+    };
+    dragOrigin = { x: e.clientX, y: e.clientY };
+    dragPosition = {
+      x: previewRect.left - containerRect.left,
+      y: previewRect.top - containerRect.top,
+    };
+    didDrag = false;
     isDragging = true;
+    secondaryRef.setPointerCapture(e.pointerId);
   }
 
-  function handleDragEnd(e: MouseEvent | TouchEvent) {
+  function handleDragMove(e: PointerEvent) {
     if (!isDragging) return;
-    isDragging = false;
+    const containerRect = containerRef.getBoundingClientRect();
+    const previewRect = secondaryRef.getBoundingClientRect();
 
-    if (!containerRef) return;
+    dragPosition = {
+      x: Math.max(
+        0,
+        Math.min(
+          e.clientX - containerRect.left - dragOffset.x,
+          containerRect.width - previewRect.width,
+        ),
+      ),
+      y: Math.max(
+        0,
+        Math.min(
+          e.clientY - containerRect.top - dragOffset.y,
+          containerRect.height - previewRect.height,
+        ),
+      ),
+    };
+    didDrag ||=
+      Math.hypot(e.clientX - dragOrigin.x, e.clientY - dragOrigin.y) > 4;
+  }
 
-    const coords =
-      "changedTouches" in e && e.changedTouches?.length
-        ? getCoordinates(e.changedTouches[0])
-        : getCoordinates(e as MouseEvent);
-
-    const { left, top, width, height } = containerRef.getBoundingClientRect();
-    const relativeX = coords.x - left;
-    const relativeY = coords.y - top;
+  function handleDragEnd(e: PointerEvent) {
+    if (!isDragging) return;
+    const { width, height } = containerRef.getBoundingClientRect();
+    const previewRect = secondaryRef.getBoundingClientRect();
+    const relativeX = dragPosition.x + previewRect.width / 2;
+    const relativeY = dragPosition.y + previewRect.height / 2;
 
     const isLeft = relativeX < width / 2;
     const isTop = relativeY < height / 2;
@@ -88,29 +119,21 @@
     else if (isTop && !isLeft) position = "top-right";
     else if (!isTop && isLeft) position = "bottom-left";
     else position = "bottom-right";
-  }
-
-  function handleMouseUpGlobal(e: MouseEvent) {
-    if (isDragging) {
-      handleDragEnd(e);
+    isDragging = false;
+    if (secondaryRef.hasPointerCapture(e.pointerId)) {
+      secondaryRef.releasePointerCapture(e.pointerId);
     }
   }
 
-  function handleTouchEndGlobal(e: TouchEvent) {
-    if (isDragging) {
-      handleDragEnd(e);
+  function handlePreviewClick(e: MouseEvent) {
+    if (didDrag) {
+      e.preventDefault();
+      e.stopPropagation();
+      didDrag = false;
+      return;
     }
+    handleSwap(e);
   }
-
-  onMount(() => {
-    window.addEventListener("mouseup", handleMouseUpGlobal);
-    window.addEventListener("touchend", handleTouchEndGlobal);
-  });
-
-  onDestroy(() => {
-    window.removeEventListener("mouseup", handleMouseUpGlobal);
-    window.removeEventListener("touchend", handleTouchEndGlobal);
-  });
 
   function getPositionClasses(pos: Position) {
     switch (pos) {
@@ -150,12 +173,18 @@
 
   {#if secondarySrcToDisplay}
     <div
-      class="absolute w-1/3 aspect-[3/4] border-2 border-black rounded-lg overflow-hidden transition-all duration-200 ease-in-out cursor-pointer {getPositionClasses(
-        position,
-      )} {isDragging ? 'scale-110 shadow-2xl z-10' : ''}"
-      onmousedown={handleDragStart}
-      ontouchstart={handleDragStart}
-      onclick={handleSwap}
+      bind:this={secondaryRef}
+      class="camera-preview absolute w-1/3 aspect-[3/4] border-2 border-black rounded-lg overflow-hidden cursor-grab {isDragging
+        ? 'is-dragging shadow-2xl z-10'
+        : `transition-all duration-200 ease-out ${getPositionClasses(position)}`}"
+      style={isDragging
+        ? `left: ${dragPosition.x}px; top: ${dragPosition.y}px;`
+        : undefined}
+      onpointerdown={handleDragStart}
+      onpointermove={handleDragMove}
+      onpointerup={handleDragEnd}
+      onpointercancel={handleDragEnd}
+      onclick={handlePreviewClick}
       role="button"
       tabindex="0"
       onkeydown={handleSwap}
@@ -232,6 +261,21 @@
   [role="button"]:focus {
     outline: 2px solid var(--color-primary);
     outline-offset: 2px;
+  }
+
+  .camera-preview {
+    touch-action: none;
+  }
+
+  .camera-preview.is-dragging {
+    cursor: grabbing;
+    scale: 1.06;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .camera-preview {
+      transition-duration: 0ms;
+    }
   }
 
   @media (max-width: 768px) {
