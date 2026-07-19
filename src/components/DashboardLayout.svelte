@@ -24,7 +24,9 @@
 
   <div class="drawer-content flex flex-col">
     <!-- Mobile Header -->
-    <header class="navbar bg-base-100 w-full border-b lg:hidden">
+    <header
+      class="navbar w-full bg-base-100/90 shadow-[0_1px_0_oklch(0_0_0/0.06)] backdrop-blur-xl lg:hidden"
+    >
       <div class="flex-none">
         <label for="drawer-toggle" class="btn btn-square btn-ghost">
           <Menu class="w-6 h-6" />
@@ -38,14 +40,18 @@
     </header>
 
     <!-- Desktop Header -->
-    <header class="hidden lg:flex items-center h-14 px-6 border-b bg-base-100">
+    <header
+      class="hidden h-16 items-center bg-base-100/90 px-8 shadow-[0_1px_0_oklch(0_0_0/0.06)] backdrop-blur-xl lg:flex"
+    >
       <h2 class="text-xl font-semibold">
         {title}
       </h2>
     </header>
 
-    <main class="flex-1 p-4 md:p-6 bg-base-200">
-      {@render children()}
+    <main class="flex-1 bg-base-200 p-4 md:p-8">
+      <div class="mx-auto max-w-[96rem]">
+        {@render children()}
+      </div>
     </main>
   </div>
 

@@ -137,7 +137,7 @@
 </script>
 
 <div class="space-y-6">
-  <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+  <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-5">
     <div class="stats bg-base-100 shadow">
       <div class="stat">
         <div class="stat-figure text-secondary">

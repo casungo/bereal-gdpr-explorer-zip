@@ -33,7 +33,9 @@
   }
 </script>
 
-<div class="flex flex-col items-center justify-center min-h-screen p-4 sm:p-8">
+<div
+  class="flex min-h-screen flex-col items-center justify-center px-4 py-10 sm:px-8 sm:py-16"
+>
   <div class="w-full max-w-5xl mx-auto">
     <WelcomeHero />
 
@@ -78,27 +80,33 @@
         </div>
       {/if}
 
-      <div class="grid md:grid-cols-3 gap-8 mt-12 text-center">
-        <div class="flex flex-col items-center">
-          <Lock class="w-10 h-10 mb-3 text-primary" />
+      <div class="mt-10 grid gap-4 text-center md:grid-cols-3">
+        <div
+          class="flex flex-col items-center rounded-2xl bg-base-100/65 p-6 shadow-[0_0_0_1px_oklch(0_0_0/0.04)]"
+        >
+          <Lock class="mb-4 size-9 text-primary" />
           <h3 class="text-lg font-semibold">Your Data is Private</h3>
-          <p class="opacity-70 text-sm">
+          <p class="mt-2 max-w-xs text-sm leading-relaxed text-base-content/65">
             Everything happens in your browser. Your files are never uploaded to
             a server, ensuring your data remains yours.
           </p>
         </div>
-        <div class="flex flex-col items-center">
-          <Sparkles class="w-10 h-10 mb-3 text-primary" />
+        <div
+          class="flex flex-col items-center rounded-2xl bg-base-100/65 p-6 shadow-[0_0_0_1px_oklch(0_0_0/0.04)]"
+        >
+          <Sparkles class="mb-4 size-9 text-primary" />
           <h3 class="text-lg font-semibold">Instant Insights</h3>
-          <p class="opacity-70 text-sm">
+          <p class="mt-2 max-w-xs text-sm leading-relaxed text-base-content/65">
             No waiting, no sign-ups. Just drop your files and instantly explore
             interactive charts and timelines of your BeReal history.
           </p>
         </div>
-        <div class="flex flex-col items-center">
-          <TrendingUp class="w-10 h-10 mb-3 text-primary" />
+        <div
+          class="flex flex-col items-center rounded-2xl bg-base-100/65 p-6 shadow-[0_0_0_1px_oklch(0_0_0/0.04)]"
+        >
+          <TrendingUp class="mb-4 size-9 text-primary" />
           <h3 class="text-lg font-semibold">Discover Your Habits</h3>
-          <p class="opacity-70 text-sm">
+          <p class="mt-2 max-w-xs text-sm leading-relaxed text-base-content/65">
             Uncover trends in your posting times, see your most-used Realmojis,
             and get a new perspective on your digital life.
           </p>
