@@ -1,32 +1,37 @@
 # BeReal GDPR Explorer
 
-A privacy-focused tool to explore and analyze your BeReal GDPR data export. View your posts, memories, friends, and more in an interactive web interface that runs entirely in your browser.
+A local, browser-based viewer for BeReal GDPR exports. It reads the archive on
+your device and displays the posts, memories, relationships, conversations, and
+analytics inside it.
 
 ## Overview
 
-BeReal GDPR Explorer is a client-side web application that allows you to explore and analyze your BeReal data export obtained through GDPR requests. The tool provides a user-friendly interface to browse through your posts, memories, friends, conversations, and other data types, offering insights into your BeReal usage patterns.
+Drop in the ZIP supplied by BeReal. The app validates its contents, reports
+unsupported or malformed sections, and organizes recognized records into
+browsable views. An optional `.json.gz` file adds app analytics.
 
 ## Key Features
 
-- **Privacy-First**: All processing happens in your browser - your data never leaves your device
-- **Combined Front-back Download**: Export your photos just as you see them on Bereal!
-- **Metadata-aware Media Exports**: Preserve original image formats for separate
+- **Local processing**: no uploads, accounts, or tracking
+- **Front-and-back downloads**: save the two BeReal camera images together
+- **Metadata-aware exports**: preserve original image formats for separate
   camera exports, generate merged JPEGs, and include timestamp/location metadata
   in ZIP downloads
-- **Interactive Dashboard**: Explore your BeReal data through various organized views
-- **Analytics & Insights**: Discover patterns in your posting habits, most-used reactions, and more
-- **Media Support**: View all your photos and videos from the export
-- **No Registration Required**: Simply upload your files and start exploring
-- **Responsive Design**: Works on desktop and mobile devices
+- **Archive report**: see which sections were imported, skipped, or missing
+- **Focused views**: browse posts, memories, friends, conversations, terms, and
+  account settings
+- **Usage summaries**: inspect posting times, reactions, platforms, devices, and
+  locations found in the export
+- **Offline shell**: reopen the installed app without a network connection
 
 ## Privacy & Security
 
-Your privacy is our top priority. This application processes all data locally in your browser:
+The application processes selected files locally in the browser:
 
-- No data is uploaded to any server
-- No tracking or analytics collection
-- Files are processed entirely client-side
-- Temporary data is cleared when you refresh the page
+- It does not upload archive contents.
+- It does not collect product analytics.
+- Imported records stay in memory and are cleared on refresh.
+- The offline cache stores the application shell, not imported files or exports.
 
 ## Installation & Usage
 
@@ -112,9 +117,9 @@ Unusually large exports may need to be inspected with another local tool.
 
 1. Drag and drop the `.zip` file onto the upload area, or click to browse
 1. Optionally add the `.json.gz` file if you want analytics events
-1. The application will automatically detect and process the files
+1. Select **Analyze selected files**
 1. Keep the tab open while the supported archive is processed
-1. Start exploring your data!
+1. Review the import report, then browse the available sections
 
 ## Media Exports
 
@@ -142,7 +147,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## Support
 
-If you encounter any issues or have questions:
+For bugs or import problems:
 
 - Check the [Issues](https://github.com/casungo/bereal-gdpr-explorer-zip/issues) page
 - Create a new issue with details about your problem
@@ -150,4 +155,4 @@ If you encounter any issues or have questions:
 
 ---
 
-**Note**: This tool is not affiliated with BeReal. It's an independent project designed to help users explore their own data.
+**Note**: This independent project is not affiliated with BeReal.

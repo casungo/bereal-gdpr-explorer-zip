@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Lock, Sparkles, TrendingUp } from "@lucide/svelte";
+  import { FileArchive, Lock, Search } from "@lucide/svelte";
   import { appStore } from "@/lib/stores/app";
   import WelcomeHero from "@/components/loader/WelcomeHero.svelte";
   import LoadingState from "@/components/loader/LoadingState.svelte";
@@ -80,38 +80,46 @@
         </div>
       {/if}
 
-      <div class="mt-10 grid gap-4 text-center md:grid-cols-3">
-        <div
-          class="flex flex-col items-center rounded-2xl bg-base-100/65 p-6 shadow-[0_0_0_1px_oklch(0_0_0/0.04)]"
+      <section class="mx-auto mt-10 max-w-3xl" aria-labelledby="how-it-works">
+        <h2
+          id="how-it-works"
+          class="text-center text-sm font-semibold uppercase tracking-wider text-base-content/55"
         >
-          <Lock class="mb-4 size-9 text-primary" />
-          <h3 class="text-lg font-semibold">Your Data is Private</h3>
-          <p class="mt-2 max-w-xs text-sm leading-relaxed text-base-content/65">
-            Everything happens in your browser. Your files are never uploaded to
-            a server, ensuring your data remains yours.
-          </p>
-        </div>
-        <div
-          class="flex flex-col items-center rounded-2xl bg-base-100/65 p-6 shadow-[0_0_0_1px_oklch(0_0_0/0.04)]"
-        >
-          <Sparkles class="mb-4 size-9 text-primary" />
-          <h3 class="text-lg font-semibold">Instant Insights</h3>
-          <p class="mt-2 max-w-xs text-sm leading-relaxed text-base-content/65">
-            No waiting, no sign-ups. Just drop your files and instantly explore
-            interactive charts and timelines of your BeReal history.
-          </p>
-        </div>
-        <div
-          class="flex flex-col items-center rounded-2xl bg-base-100/65 p-6 shadow-[0_0_0_1px_oklch(0_0_0/0.04)]"
-        >
-          <TrendingUp class="mb-4 size-9 text-primary" />
-          <h3 class="text-lg font-semibold">Discover Your Habits</h3>
-          <p class="mt-2 max-w-xs text-sm leading-relaxed text-base-content/65">
-            Uncover trends in your posting times, see your most-used Realmojis,
-            and get a new perspective on your digital life.
-          </p>
-        </div>
-      </div>
+          What happens to your files
+        </h2>
+        <ol class="mt-5 grid gap-5 sm:grid-cols-3">
+          <li class="flex gap-3 sm:block">
+            <FileArchive class="mt-0.5 size-5 shrink-0 text-primary sm:mb-2" />
+            <div>
+              <h3 class="font-semibold">Open the export</h3>
+              <p class="mt-1 text-sm leading-relaxed text-base-content/65">
+                Select the ZIP from BeReal. Add the analytics file only if you
+                have one.
+              </p>
+            </div>
+          </li>
+          <li class="flex gap-3 sm:block">
+            <Search class="mt-0.5 size-5 shrink-0 text-primary sm:mb-2" />
+            <div>
+              <h3 class="font-semibold">Browse its contents</h3>
+              <p class="mt-1 text-sm leading-relaxed text-base-content/65">
+                Find posts, memories, friends, conversations, and account
+                details.
+              </p>
+            </div>
+          </li>
+          <li class="flex gap-3 sm:block">
+            <Lock class="mt-0.5 size-5 shrink-0 text-primary sm:mb-2" />
+            <div>
+              <h3 class="font-semibold">Keep it on this device</h3>
+              <p class="mt-1 text-sm leading-relaxed text-base-content/65">
+                The browser reads your files locally. Nothing is uploaded or
+                tracked.
+              </p>
+            </div>
+          </li>
+        </ol>
+      </section>
     </main>
   </div>
 </div>

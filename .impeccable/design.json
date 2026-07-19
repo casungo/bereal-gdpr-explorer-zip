@@ -1,0 +1,461 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-07-19T02:45:15+02:00",
+  "title": "Design System: BeReal GDPR Explorer",
+  "extensions": {
+    "colorMeta": {
+      "archive-blue": {
+        "role": "primary",
+        "displayName": "Archive Blue",
+        "canonical": "oklch(0.54 0.205 264)",
+        "tonalRamp": [
+          "oklch(0.15 0.08 264)",
+          "oklch(0.26 0.13 264)",
+          "oklch(0.38 0.17 264)",
+          "oklch(0.50 0.20 264)",
+          "oklch(0.62 0.18 264)",
+          "oklch(0.73 0.145 264)",
+          "oklch(0.84 0.09 264)",
+          "oklch(0.95 0.03 264)"
+        ]
+      },
+      "archive-blue-dark": {
+        "role": "primary",
+        "displayName": "Archive Blue Dark",
+        "canonical": "oklch(0.73 0.145 264)",
+        "tonalRamp": [
+          "oklch(0.15 0.06 264)",
+          "oklch(0.26 0.09 264)",
+          "oklch(0.38 0.12 264)",
+          "oklch(0.50 0.14 264)",
+          "oklch(0.62 0.15 264)",
+          "oklch(0.73 0.145 264)",
+          "oklch(0.84 0.09 264)",
+          "oklch(0.95 0.03 264)"
+        ]
+      },
+      "memory-coral": {
+        "role": "secondary",
+        "displayName": "Memory Coral",
+        "canonical": "oklch(0.61 0.185 28)",
+        "tonalRamp": [
+          "oklch(0.15 0.07 28)",
+          "oklch(0.26 0.11 28)",
+          "oklch(0.38 0.15 28)",
+          "oklch(0.50 0.18 28)",
+          "oklch(0.61 0.185 28)",
+          "oklch(0.73 0.15 28)",
+          "oklch(0.84 0.09 28)",
+          "oklch(0.95 0.03 28)"
+        ]
+      },
+      "memory-coral-dark": {
+        "role": "secondary",
+        "displayName": "Memory Coral Dark",
+        "canonical": "oklch(0.74 0.145 28)",
+        "tonalRamp": [
+          "oklch(0.15 0.05 28)",
+          "oklch(0.26 0.08 28)",
+          "oklch(0.38 0.11 28)",
+          "oklch(0.50 0.13 28)",
+          "oklch(0.62 0.145 28)",
+          "oklch(0.74 0.145 28)",
+          "oklch(0.85 0.08 28)",
+          "oklch(0.95 0.025 28)"
+        ]
+      },
+      "local-green": {
+        "role": "tertiary",
+        "displayName": "Local Green",
+        "canonical": "oklch(0.58 0.145 154)",
+        "tonalRamp": [
+          "oklch(0.15 0.05 154)",
+          "oklch(0.26 0.08 154)",
+          "oklch(0.38 0.11 154)",
+          "oklch(0.50 0.14 154)",
+          "oklch(0.62 0.145 154)",
+          "oklch(0.74 0.13 154)",
+          "oklch(0.85 0.075 154)",
+          "oklch(0.95 0.025 154)"
+        ]
+      },
+      "local-green-dark": {
+        "role": "tertiary",
+        "displayName": "Local Green Dark",
+        "canonical": "oklch(0.76 0.125 154)",
+        "tonalRamp": [
+          "oklch(0.15 0.04 154)",
+          "oklch(0.26 0.065 154)",
+          "oklch(0.38 0.09 154)",
+          "oklch(0.50 0.11 154)",
+          "oklch(0.62 0.125 154)",
+          "oklch(0.76 0.125 154)",
+          "oklch(0.86 0.07 154)",
+          "oklch(0.95 0.02 154)"
+        ]
+      },
+      "quiet-canvas": {
+        "role": "neutral",
+        "displayName": "Quiet Canvas",
+        "canonical": "oklch(0.995 0.003 255)",
+        "tonalRamp": [
+          "oklch(0.15 0.008 255)",
+          "oklch(0.27 0.008 255)",
+          "oklch(0.39 0.008 255)",
+          "oklch(0.51 0.008 255)",
+          "oklch(0.63 0.008 255)",
+          "oklch(0.75 0.007 255)",
+          "oklch(0.87 0.005 255)",
+          "oklch(0.995 0.003 255)"
+        ]
+      },
+      "quiet-canvas-subtle": {
+        "role": "neutral",
+        "displayName": "Quiet Canvas Subtle",
+        "canonical": "oklch(0.968 0.008 255)",
+        "tonalRamp": [
+          "oklch(0.15 0.008 255)",
+          "oklch(0.27 0.008 255)",
+          "oklch(0.39 0.008 255)",
+          "oklch(0.51 0.008 255)",
+          "oklch(0.63 0.008 255)",
+          "oklch(0.75 0.008 255)",
+          "oklch(0.87 0.008 255)",
+          "oklch(0.968 0.008 255)"
+        ]
+      },
+      "quiet-divider": {
+        "role": "neutral",
+        "displayName": "Quiet Divider",
+        "canonical": "oklch(0.91 0.016 255)",
+        "tonalRamp": [
+          "oklch(0.15 0.012 255)",
+          "oklch(0.27 0.014 255)",
+          "oklch(0.39 0.016 255)",
+          "oklch(0.51 0.016 255)",
+          "oklch(0.63 0.016 255)",
+          "oklch(0.75 0.016 255)",
+          "oklch(0.87 0.016 255)",
+          "oklch(0.95 0.01 255)"
+        ]
+      },
+      "deep-ink": {
+        "role": "neutral",
+        "displayName": "Deep Ink",
+        "canonical": "oklch(0.205 0.028 264)",
+        "tonalRamp": [
+          "oklch(0.15 0.028 264)",
+          "oklch(0.205 0.028 264)",
+          "oklch(0.34 0.026 264)",
+          "oklch(0.47 0.023 264)",
+          "oklch(0.60 0.019 264)",
+          "oklch(0.73 0.014 264)",
+          "oklch(0.85 0.009 264)",
+          "oklch(0.95 0.004 264)"
+        ]
+      },
+      "night-canvas": {
+        "role": "neutral",
+        "displayName": "Night Canvas",
+        "canonical": "oklch(0.205 0.024 264)",
+        "tonalRamp": [
+          "oklch(0.15 0.022 264)",
+          "oklch(0.205 0.024 264)",
+          "oklch(0.34 0.023 264)",
+          "oklch(0.47 0.021 264)",
+          "oklch(0.60 0.017 264)",
+          "oklch(0.73 0.013 264)",
+          "oklch(0.85 0.008 264)",
+          "oklch(0.95 0.004 264)"
+        ]
+      },
+      "night-canvas-deep": {
+        "role": "neutral",
+        "displayName": "Night Canvas Deep",
+        "canonical": "oklch(0.16 0.022 264)",
+        "tonalRamp": [
+          "oklch(0.15 0.022 264)",
+          "oklch(0.27 0.022 264)",
+          "oklch(0.39 0.021 264)",
+          "oklch(0.51 0.019 264)",
+          "oklch(0.63 0.016 264)",
+          "oklch(0.75 0.012 264)",
+          "oklch(0.87 0.007 264)",
+          "oklch(0.95 0.003 264)"
+        ]
+      },
+      "night-divider": {
+        "role": "neutral",
+        "displayName": "Night Divider",
+        "canonical": "oklch(0.29 0.028 264)",
+        "tonalRamp": [
+          "oklch(0.15 0.024 264)",
+          "oklch(0.29 0.028 264)",
+          "oklch(0.41 0.026 264)",
+          "oklch(0.53 0.022 264)",
+          "oklch(0.65 0.017 264)",
+          "oklch(0.77 0.012 264)",
+          "oklch(0.88 0.007 264)",
+          "oklch(0.95 0.003 264)"
+        ]
+      },
+      "night-ink": {
+        "role": "neutral",
+        "displayName": "Night Ink",
+        "canonical": "oklch(0.94 0.014 255)",
+        "tonalRamp": [
+          "oklch(0.15 0.012 255)",
+          "oklch(0.27 0.014 255)",
+          "oklch(0.39 0.014 255)",
+          "oklch(0.51 0.014 255)",
+          "oklch(0.63 0.014 255)",
+          "oklch(0.75 0.014 255)",
+          "oklch(0.87 0.014 255)",
+          "oklch(0.94 0.014 255)"
+        ]
+      },
+      "success": {
+        "role": "tertiary",
+        "displayName": "Success Green",
+        "canonical": "oklch(0.53 0.145 154)",
+        "tonalRamp": [
+          "oklch(0.15 0.05 154)",
+          "oklch(0.26 0.08 154)",
+          "oklch(0.38 0.115 154)",
+          "oklch(0.53 0.145 154)",
+          "oklch(0.64 0.14 154)",
+          "oklch(0.75 0.12 154)",
+          "oklch(0.86 0.07 154)",
+          "oklch(0.95 0.02 154)"
+        ]
+      },
+      "warning": {
+        "role": "tertiary",
+        "displayName": "Warning Amber",
+        "canonical": "oklch(0.72 0.15 78)",
+        "tonalRamp": [
+          "oklch(0.15 0.045 78)",
+          "oklch(0.27 0.075 78)",
+          "oklch(0.39 0.105 78)",
+          "oklch(0.51 0.13 78)",
+          "oklch(0.63 0.15 78)",
+          "oklch(0.72 0.15 78)",
+          "oklch(0.84 0.09 78)",
+          "oklch(0.95 0.025 78)"
+        ]
+      },
+      "error": {
+        "role": "secondary",
+        "displayName": "Error Red",
+        "canonical": "oklch(0.56 0.205 27)",
+        "tonalRamp": [
+          "oklch(0.15 0.07 27)",
+          "oklch(0.26 0.12 27)",
+          "oklch(0.38 0.17 27)",
+          "oklch(0.50 0.20 27)",
+          "oklch(0.62 0.19 27)",
+          "oklch(0.73 0.15 27)",
+          "oklch(0.84 0.09 27)",
+          "oklch(0.95 0.025 27)"
+        ]
+      },
+      "on-accent": {
+        "role": "neutral",
+        "displayName": "On Accent",
+        "canonical": "oklch(0.985 0.006 264)",
+        "tonalRamp": [
+          "oklch(0.15 0.006 264)",
+          "oklch(0.27 0.006 264)",
+          "oklch(0.39 0.006 264)",
+          "oklch(0.51 0.006 264)",
+          "oklch(0.63 0.006 264)",
+          "oklch(0.75 0.006 264)",
+          "oklch(0.87 0.006 264)",
+          "oklch(0.985 0.006 264)"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "Display",
+        "purpose": "Welcome-page headline only."
+      },
+      "headline": {
+        "displayName": "Headline",
+        "purpose": "Major workflow and screen headings."
+      },
+      "title": {
+        "displayName": "Title",
+        "purpose": "Card, dialog, and grouped-content headings."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "Guidance, descriptions, and general interface copy."
+      },
+      "label": {
+        "displayName": "Label",
+        "purpose": "Compact controls and dense data labels."
+      }
+    },
+    "shadows": [
+      {
+        "name": "surface-keyline",
+        "value": "0 0 0 1px oklch(0 0 0 / 0.055), 0 1px 2px oklch(0 0 0 / 0.04)",
+        "purpose": "Defines cards and statistics on adjacent neutral layers."
+      },
+      {
+        "name": "ambient-lift",
+        "value": "0 12px 32px -20px oklch(0 0 0 / 0.28)",
+        "purpose": "Separates major containers without decorative weight."
+      },
+      {
+        "name": "drop-target",
+        "value": "0 0 0 1px oklch(0 0 0 / 0.06), 0 16px 50px -30px oklch(0 0 0 / 0.35)",
+        "purpose": "Reserved for archive import and drag state."
+      },
+      {
+        "name": "dark-keyline",
+        "value": "0 0 0 1px oklch(1 0 0 / 0.09)",
+        "purpose": "Maintains surface separation in dark mode."
+      }
+    ],
+    "motion": [
+      {
+        "name": "state-fast",
+        "value": "160ms cubic-bezier(0.2, 0, 0, 1)",
+        "purpose": "Default button and control state transition."
+      },
+      {
+        "name": "state-standard",
+        "value": "200ms cubic-bezier(0.2, 0, 0, 1)",
+        "purpose": "Drop-zone and composed control feedback."
+      },
+      {
+        "name": "reduced-motion",
+        "value": "0.01ms",
+        "purpose": "Effective instant transition under prefers-reduced-motion."
+      }
+    ],
+    "breakpoints": [
+      { "name": "sm", "value": "640px" },
+      { "name": "md", "value": "768px" },
+      { "name": "lg", "value": "1024px" },
+      { "name": "xl", "value": "1280px" }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "The single authoritative action on a surface.",
+      "html": "<button class=\"ds-btn-primary\">Analyze archive</button>",
+      "css": ".ds-btn-primary{min-height:2.75rem;padding:.6875rem 1rem;border:0;border-radius:.75rem;background:var(--color-primary,oklch(0.54 0.205 264));color:var(--color-primary-content,oklch(0.985 0.006 264));font:650 1rem/1.2 Inter,ui-sans-serif,system-ui,sans-serif;letter-spacing:-.01em;transition:background-color 160ms cubic-bezier(.2,0,0,1),transform 160ms cubic-bezier(.2,0,0,1)}.ds-btn-primary:hover{filter:brightness(1.06)}.ds-btn-primary:active{transform:scale(.96)}.ds-btn-primary:focus-visible{outline:3px solid color-mix(in oklch,var(--color-primary) 45%,transparent);outline-offset:2px}"
+    },
+    {
+      "name": "Outline Button",
+      "kind": "button",
+      "refersTo": "button-outline",
+      "description": "A secondary action with a clear but quiet boundary.",
+      "html": "<button class=\"ds-btn-outline\">Load demo</button>",
+      "css": ".ds-btn-outline{min-height:2.75rem;padding:.6875rem 1rem;border:1px solid var(--color-base-300,oklch(0.91 0.016 255));border-radius:.75rem;background:var(--color-base-100,oklch(0.995 0.003 255));color:var(--color-base-content,oklch(0.205 0.028 264));font:650 1rem/1.2 Inter,ui-sans-serif,system-ui,sans-serif;transition:background-color 160ms cubic-bezier(.2,0,0,1),transform 160ms cubic-bezier(.2,0,0,1)}.ds-btn-outline:hover{background:var(--color-base-200,oklch(0.968 0.008 255))}.ds-btn-outline:active{transform:scale(.96)}.ds-btn-outline:focus-visible{outline:3px solid color-mix(in oklch,var(--color-primary) 45%,transparent);outline-offset:2px}"
+    },
+    {
+      "name": "Text Field",
+      "kind": "input",
+      "refersTo": "input",
+      "description": "A compact field for filtering and date entry.",
+      "html": "<input class=\"ds-input\" type=\"text\" placeholder=\"Search your archive\">",
+      "css": ".ds-input{height:2.5rem;padding:.5rem .75rem;border:1px solid var(--color-base-300,oklch(0.91 0.016 255));border-radius:.625rem;background:var(--color-base-100,oklch(0.995 0.003 255));color:var(--color-base-content,oklch(0.205 0.028 264));font:400 1rem/1.55 Inter,ui-sans-serif,system-ui,sans-serif;caret-color:var(--color-primary,oklch(0.54 0.205 264))}.ds-input::placeholder{color:color-mix(in oklch,var(--color-base-content) 65%,var(--color-base-100))}.ds-input:focus-visible{outline:3px solid color-mix(in oklch,var(--color-primary) 45%,transparent);outline-offset:2px}"
+    },
+    {
+      "name": "Status Badge",
+      "kind": "chip",
+      "refersTo": "badge",
+      "description": "Compact metadata and status with tabular figures.",
+      "html": "<span class=\"ds-badge\">Archive ready</span>",
+      "css": ".ds-badge{display:inline-flex;min-height:1.625rem;align-items:center;padding:.25rem .625rem;border:1px solid var(--color-base-300,oklch(0.91 0.016 255));border-radius:999px;background:var(--color-base-200,oklch(0.968 0.008 255));color:var(--color-base-content,oklch(0.205 0.028 264));font:600 .75rem/1.25 Inter,ui-sans-serif,system-ui,sans-serif;font-variant-numeric:tabular-nums}"
+    },
+    {
+      "name": "Content Card",
+      "kind": "card",
+      "refersTo": "card",
+      "description": "A standard container for one coherent information group.",
+      "html": "<article class=\"ds-card\"><h3>Posts</h3><p>Browse photos, captions, dates, and audience information.</p></article>",
+      "css": ".ds-card{max-width:24rem;padding:1.5rem;border-radius:1rem;background:var(--color-base-100,oklch(0.995 0.003 255));color:var(--color-base-content,oklch(0.205 0.028 264));box-shadow:0 0 0 1px oklch(0 0 0/.055),0 1px 2px oklch(0 0 0/.04),0 12px 32px -20px oklch(0 0 0/.28);font-family:Inter,ui-sans-serif,system-ui,sans-serif}.ds-card h3{margin:0;font-size:1.25rem;line-height:1.1;letter-spacing:-.025em}.ds-card p{margin:.75rem 0 0;line-height:1.55}"
+    },
+    {
+      "name": "Sidebar Destination",
+      "kind": "nav",
+      "description": "The active archive section in desktop or drawer navigation.",
+      "html": "<button class=\"ds-nav-active\"><svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" aria-hidden=\"true\"><path d=\"M3 3v18h18\"/><path d=\"m7 16 4-5 4 3 5-7\"/></svg><span>Overview</span></button>",
+      "css": ".ds-nav-active{display:flex;width:100%;min-height:2.75rem;align-items:center;gap:.75rem;padding:.625rem .875rem;border:0;border-radius:.75rem;background:color-mix(in oklch,var(--color-primary,oklch(0.54 0.205 264)) 16%,transparent);color:var(--color-primary,oklch(0.54 0.205 264));font:650 .875rem/1.2 Inter,ui-sans-serif,system-ui,sans-serif;text-align:left}.ds-nav-active:hover{background:color-mix(in oklch,var(--color-primary) 22%,transparent)}.ds-nav-active:focus-visible{outline:3px solid color-mix(in oklch,var(--color-primary) 45%,transparent);outline-offset:2px}"
+    },
+    {
+      "name": "Archive Drop Zone",
+      "kind": "custom",
+      "description": "The signature import target for private local processing.",
+      "html": "<label class=\"ds-drop\"><svg width=\"36\" height=\"36\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" aria-hidden=\"true\"><path d=\"M12 3v12\"/><path d=\"m7 8 5-5 5 5\"/><path d=\"M5 21h14\"/></svg><strong>Drop your BeReal export here</strong><span>Your files stay in this browser.</span></label>",
+      "css": ".ds-drop{display:flex;min-height:14rem;flex-direction:column;align-items:center;justify-content:center;gap:.75rem;padding:2rem;border-radius:1rem;background:var(--color-base-100,oklch(0.995 0.003 255));color:var(--color-base-content,oklch(0.205 0.028 264));box-shadow:0 0 0 1px oklch(0 0 0/.06),0 16px 50px -30px oklch(0 0 0/.35);font-family:Inter,ui-sans-serif,system-ui,sans-serif;text-align:center;cursor:pointer;transition:box-shadow 200ms cubic-bezier(.2,0,0,1),transform 200ms cubic-bezier(.2,0,0,1)}.ds-drop strong{font-size:1.25rem;letter-spacing:-.025em}.ds-drop span{color:color-mix(in oklch,var(--color-base-content) 70%,var(--color-base-100))}.ds-drop:hover{transform:translateY(-2px)}.ds-drop:focus-within{box-shadow:0 0 0 3px color-mix(in oklch,var(--color-primary) 35%,transparent)}"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Private Archive",
+    "overview": "The interface is a calm, precise, personal workspace for opening sensitive material and turning unfamiliar files into recognizable memories. Quiet neutral surfaces establish order; Archive Blue appears where the user must act or understand selection, while semantic colors communicate outcomes without drama. The system is functionally dense but never corporate. Familiar controls, short state transitions, and compact information structures keep attention on importing, exploring, and exporting. It explicitly rejects enterprise-dashboard theater, dark hacker-style privacy imagery, and visual imitation of BeReal's official product.",
+    "keyCharacteristics": [
+      "Restrained color with one authoritative blue action voice.",
+      "Tonal surface layers supported by small, structural shadows.",
+      "One highly legible sans-serif family across interface and data.",
+      "Compact, reassuring controls with complete interaction feedback.",
+      "Light and dark themes that preserve the same hierarchy and semantics."
+    ],
+    "rules": [
+      {
+        "name": "The One Action Voice Rule",
+        "body": "Archive Blue owns primary actions and selection. Memory Coral and Local Green never masquerade as competing primary actions.",
+        "section": "colors"
+      },
+      {
+        "name": "The Semantic Evidence Rule",
+        "body": "Success, warning, and error are never communicated by color alone; pair them with explicit copy or recognizable iconography.",
+        "section": "colors"
+      },
+      {
+        "name": "The One Family Rule",
+        "body": "All interface copy uses Inter or its system fallback. No display font enters buttons, navigation, tables, or data labels.",
+        "section": "typography"
+      },
+      {
+        "name": "The Human Reading Rule",
+        "body": "Explanatory text wraps naturally and stays within 65–75 characters; data structures may run wider when scanning benefits.",
+        "section": "typography"
+      },
+      {
+        "name": "The Structural Shadow Rule",
+        "body": "A shadow must explain task hierarchy, floating behavior, or a live interaction state. If removing it changes nothing about comprehension, remove it.",
+        "section": "elevation"
+      },
+      {
+        "name": "The Tonal First Rule",
+        "body": "Establish depth with Quiet Canvas layers before adding elevation.",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "Do use Archive Blue for the single primary action, current navigation, focus, and selection.",
+      "Do establish hierarchy with Quiet Canvas, Quiet Canvas Subtle, and Quiet Divider before adding shadow.",
+      "Do keep state transitions between 150ms and 200ms and remove nonessential motion under prefers-reduced-motion.",
+      "Do pair every success, warning, or error color with text or icon evidence.",
+      "Do preserve familiar controls and responsive structure across import, exploration, and export workflows.",
+      "Do maintain WCAG 2.2 AA contrast and complete keyboard navigation."
+    ],
+    "donts": [
+      "Don't make the product resemble an enterprise dashboard through excessive panels, dense chrome, or ornamental metrics.",
+      "Don't use a dark, alarming hacker-style privacy aesthetic, neon security motifs, or fear-based messaging.",
+      "Don't imitate BeReal's official interface or visual mannerisms in a way that implies affiliation.",
+      "Don't use Memory Coral or Local Green as competing primary actions.",
+      "Don't use nested cards, decorative glass effects, gradient text, oversized corner radii, or wide soft shadows paired decoratively with borders.",
+      "Don't invent custom affordances where a standard button, field, menu, drawer, or native dialog communicates the task better."
+    ]
+  }
+}

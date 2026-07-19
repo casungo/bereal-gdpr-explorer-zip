@@ -231,7 +231,9 @@
                       12,
                       (item.posts / maxFrequencyValue) * 200,
                     )}px"
-                    title="{item.name}: {item.posts} posts"
+                    title="{item.name}: {item.posts} {item.posts === 1
+                      ? 'post'
+                      : 'posts'}"
                   ></div>
                   <div
                     class="origin-top text-center text-xs text-base-content/70"
@@ -387,7 +389,7 @@
             />
           {/if}
 
-          {#if Object.keys(topRealmojiWithImages).length > 0}
+          {#if topRealmojis.length > 0 && Object.keys(topRealmojiWithImages).length > 0}
             <div class="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 gap-2">
               {#each Object.values(topRealmojiWithImages) as realmoji}
                 {@const r = realmoji as Realmoji}
@@ -410,7 +412,7 @@
                 {/if}
               {/each}
             </div>
-          {:else}
+          {:else if topRealmojis.length > 0}
             <div
               class="flex items-center justify-center h-32 text-base-content/50"
             >

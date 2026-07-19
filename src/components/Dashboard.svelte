@@ -127,7 +127,7 @@
     <div class="flex items-center justify-center h-full">
       <div class="text-center">
         <div class="loading loading-spinner loading-lg"></div>
-        <p class="mt-4">No data available</p>
+        <p class="mt-4">This export did not contain supported BeReal data.</p>
       </div>
     </div>
   {:else if activeTab === "overview"}
@@ -143,11 +143,7 @@
       <div class="card bg-base-100 shadow-xl">
         <div class="card-body">
           <h2 class="card-title">Posts</h2>
-          <p>No posts data found in data object.</p>
-          <p>
-            Available data keys:
-            {Object.keys(data).join(", ")}
-          </p>
+          <p>This export does not include posts.</p>
         </div>
       </div>
     {/if}

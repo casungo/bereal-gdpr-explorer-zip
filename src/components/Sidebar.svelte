@@ -179,7 +179,6 @@
       transparent
     );
     color: var(--color-primary);
-    box-shadow: inset 3px 0 0 var(--color-primary);
   }
 
   .menu li button:hover:not(.active) {

@@ -50,8 +50,6 @@
   ondragleave={handleDragLeave}
   ondragover={handleDragOver}
   ondrop={handleDrop}
-  role="button"
-  tabindex="0"
 >
   <input
     type="file"
@@ -75,8 +73,8 @@
       Drop your BeReal export here
     </div>
     <div class="mt-2 max-w-xl text-base-content/65 text-pretty">
-      Drag and drop your `.zip` file. The `.json.gz` analytics file is optional,
-      or click to browse.
+      Drag and drop the ZIP file, or click to browse. The JSON.GZ analytics file
+      is optional.
     </div>
     <div
       class="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-lg mx-auto mt-6 w-full"

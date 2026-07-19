@@ -43,4 +43,26 @@ describe("app import report lifecycle", () => {
     );
     expect(get(appStore.report)).toBeNull();
   });
+
+  it("loads a populated demo across every dashboard collection", () => {
+    appStore.loadDemoData();
+    const data = get(appStore.data);
+
+    expect(data).not.toBeNull();
+    for (const section of [
+      "friends",
+      "friendRequests",
+      "posts",
+      "memories",
+      "comments",
+      "realmojis",
+      "conversations",
+      "analytics",
+      "pushTokens",
+      "terms",
+    ] as const) {
+      expect(data?.[section]?.length, section).toBeGreaterThanOrEqual(10);
+    }
+    expect(Object.keys(data?.pushSettings ?? {})).toHaveLength(10);
+  });
 });
