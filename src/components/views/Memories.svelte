@@ -312,4 +312,5 @@
   posts={downloadDialogState.posts}
   mediaMap={media}
   defaultZipName={downloadDialogState.defaultName}
+  itemName="memory"
 />

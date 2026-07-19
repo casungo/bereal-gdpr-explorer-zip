@@ -20,10 +20,17 @@
     posts: (Post | Memory)[];
     mediaMap: MediaMap;
     defaultZipName: string;
+    itemName?: "post" | "memory";
   }
 
-  let { isOpen, onOpenChange, posts, mediaMap, defaultZipName }: Props =
-    $props();
+  let {
+    isOpen,
+    onOpenChange,
+    posts,
+    mediaMap,
+    defaultZipName,
+    itemName = "post",
+  }: Props = $props();
 
   let preset: DownloadPreset = $state("complete");
   let customSelection = $state<DownloadSelection>({
@@ -172,7 +179,11 @@
           <h3 class="text-xl font-bold">Download</h3>
           <p class="mt-1 text-sm opacity-70">
             {posts.length}
-            post{posts.length !== 1 ? "s" : ""} selected ·
+            {itemName}{posts.length !== 1
+              ? itemName === "memory"
+                ? "ies"
+                : "s"
+              : ""} selected ·
             <span class:text-primary={hasVideoDownloads}>
               {videoCount}
               video{videoCount !== 1 ? "s" : ""} available
