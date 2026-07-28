@@ -120,13 +120,14 @@ The system is functionally dense but never corporate. Familiar controls, short s
 
 ## 2. Logo
 
-The definitive mark is the existing app icon: a white **B** centered inside a ring of twelve yellow stars on Archive Blue. The canonical assets are `public/icon-192.png`, `public/icon-512.png`, and `public/favicon.ico`.
+The definitive mark is the existing app icon: a white **B** centered inside a ring of twelve yellow stars on Archive Blue. The canonical assets are `public/icon-192.png`, `public/icon-512.png`, and `public/favicon.ico`. `public/icon-maskable-512.png` provides platform-safe padding, while `public/og-image.png` is the canonical social card.
 
 - Use the image asset everywhere; never recreate the mark with text, an icon library, or CSS.
 - Keep its colors, proportions, and orientation unchanged.
 - Present it as a square with an 18.75% corner radius in the interface. Platforms may apply their own icon mask.
 - Use an empty alt attribute when the full product name is adjacent; otherwise use “BeReal GDPR Explorer logo”.
 - Mark Yellow belongs to the logo only. It is not an action, selection, or warning color in the interface.
+- Social cards use the full product name, the “Your BeReal archive, made clear.” promise, and the canonical logo without adding new marks.
 
 ## 3. Colors
 

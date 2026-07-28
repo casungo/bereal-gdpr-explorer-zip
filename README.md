@@ -89,6 +89,24 @@ reopening the app.
 
 1. Navigate to `http://localhost:4321`
 
+### Verification
+
+```bash
+pnpm test
+pnpm test:browser
+pnpm check
+pnpm build
+```
+
+The browser suite uses Chromium to verify canvas-generated merged images. Run
+`pnpm exec playwright install chromium` once if the browser is not installed.
+
+Brand preview and maskable icon assets are reproducible with:
+
+```bash
+pnpm assets:brand
+```
+
 ## File Upload
 
 ### Getting Your BeReal Export
