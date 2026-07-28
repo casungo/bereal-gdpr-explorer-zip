@@ -1,8 +1,9 @@
 import JSZip from "jszip";
-import pako from "pako";
+import { gzip } from "pako";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { userMessageForArchiveError } from "./stores/app";
 import { ArchiveParseError, parseBeRealZip } from "./zip-parser";
+import { APP_VERSION } from "./version";
 
 const bucketId = "abcdefghijklmnopqrstuvwxyz";
 
@@ -62,9 +63,7 @@ async function makeArchive({
   const zipBuffer = await zip.generateAsync({ type: "arraybuffer" });
   const gzFile = analyticsLines
     ? makeFile(
-        pako.gzip(
-          analyticsLines.map((line) => JSON.stringify(line)).join("\n"),
-        ),
+        gzip(analyticsLines.map((line) => JSON.stringify(line)).join("\n")),
         "analytics.json.gz",
         "application/gzip",
       )
@@ -220,7 +219,7 @@ describe("parseBeRealZip", () => {
     );
 
     expect(report).toMatchObject({
-      appVersion: "2.0.0",
+      appVersion: APP_VERSION,
       parserVersion: "1",
       recognizedMedia: 2,
       invalidMedia: 0,

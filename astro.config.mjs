@@ -1,5 +1,6 @@
 // @ts-check
 
+import sitemap from "@astrojs/sitemap";
 import svelte from "@astrojs/svelte";
 import tailwindcss from "@tailwindcss/vite";
 import { defineConfig } from "astro/config";
@@ -14,12 +15,9 @@ export default defineConfig({
       minify: "esbuild",
       sourcemap: false,
     },
-    optimizeDeps: {
-      exclude: ["@types/pako"],
-    },
   },
 
-  integrations: [svelte()],
+  integrations: [svelte(), sitemap()],
 
   build: {
     format: "directory",

@@ -1,7 +1,7 @@
 <script lang="ts">
   import { ExternalLink } from "@lucide/svelte";
   import BrandLogo from "@/components/BrandLogo.svelte";
-  import { APP_NAME } from "@/lib/brand";
+  import { APP_DISCLAIMER, APP_NAME } from "@/lib/brand";
   import { APP_VERSION } from "@/lib/version";
 </script>
 
@@ -35,4 +35,7 @@
       <span class="font-medium">View on GitHub</span>
     </a>
   </div>
+  <p class="mt-3 text-xs text-base-content/55">
+    {APP_DISCLAIMER}
+  </p>
 </header>

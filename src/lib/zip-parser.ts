@@ -1,5 +1,5 @@
 import JSZip from "jszip";
-import pako from "pako";
+import { ungzip } from "pako";
 import type {
   AnalyticsEvent,
   BeRealData,
@@ -888,7 +888,7 @@ export async function parseBeRealZip(
   if (gzBuffer) {
     let analyticsText: string;
     try {
-      analyticsText = pako.ungzip(gzBuffer, { to: "string" });
+      analyticsText = ungzip(gzBuffer, { toText: true });
     } catch {
       archiveError(
         "INVALID_ANALYTICS",

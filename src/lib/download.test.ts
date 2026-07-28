@@ -411,6 +411,4 @@ describe("prepared download artifacts", () => {
     expect([...unlocatedBytes.slice(0, 4)]).toEqual([0xff, 0xd8, 0xff, 0xe1]);
     expect(containsBytes(unlocatedBytes, [0x88, 0x25])).toBe(false);
   });
-
-  it.todo("verifies merged-image canvas pixels in a real browser");
 });

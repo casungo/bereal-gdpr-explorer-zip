@@ -15,7 +15,7 @@
   } from "@lucide/svelte";
   import BrandLogo from "@/components/BrandLogo.svelte";
   import ThemeToggle from "@/components/ui/ThemeToggle.svelte";
-  import { APP_NAME } from "@/lib/brand";
+  import { APP_DISCLAIMER, APP_NAME } from "@/lib/brand";
   import { APP_VERSION } from "@/lib/version";
 
   export type TabId =
@@ -153,6 +153,11 @@
   </nav>
 
   <div class="space-y-2 p-4 shadow-[0_-1px_0_oklch(0_0_0/0.06)]">
+    <p
+      class="px-1 pb-1 text-center text-[0.6875rem] leading-relaxed text-base-content/55"
+    >
+      {APP_DISCLAIMER}
+    </p>
     <a
       href="https://ko-fi.com/G2G11QJ91M"
       target="_blank"

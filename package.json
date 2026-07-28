@@ -1,7 +1,7 @@
 {
   "name": "bereal-gdpr-explorer-zip",
   "type": "module",
-  "version": "2.0.0",
+  "version": "2.1.0",
   "packageManager": "pnpm@11.9.0",
   "scripts": {
     "astro": "astro",
@@ -9,30 +9,35 @@
     "build": "astro build",
     "preview": "astro preview --host 0.0.0.0",
     "check": "astro check",
-    "format": "prettier --write \"src/**/*.{ts,svelte,astro}\" \"*.{json,js,ts,mjs}\"",
-    "format:check": "prettier --check \"src/**/*.{ts,svelte,astro}\" \"*.{json,js,ts,mjs}\"",
-    "test": "vitest run"
+    "assets:brand": "node scripts/generate-brand-assets.mjs",
+    "format": "prettier --write \"src/**/*.{ts,svelte,astro}\" \"scripts/**/*.mjs\" \"*.{json,js,ts,mjs}\"",
+    "format:check": "prettier --check \"src/**/*.{ts,svelte,astro}\" \"scripts/**/*.mjs\" \"*.{json,js,ts,mjs}\"",
+    "test": "vitest run --exclude \"**/*.browser.test.ts\"",
+    "test:browser": "vitest run --config vitest.browser.config.ts",
+    "test:all": "pnpm test && pnpm test:browser"
   },
   "dependencies": {
-    "@lucide/svelte": "^1.14.0",
-    "date-fns": "^4.1.0",
+    "@astrojs/sitemap": "^3.7.3",
+    "@lucide/svelte": "^1.27.0",
+    "date-fns": "^4.4.0",
     "jszip": "^3.10.1",
-    "pako": "^2.1.0",
-    "svelte": "^5.56.6"
+    "pako": "^3.0.1",
+    "svelte": "^5.56.8"
   },
   "devDependencies": {
     "@astrojs/check": "^0.9.9",
-    "@astrojs/svelte": "^8.1.2",
-    "@tailwindcss/vite": "^4.2.4",
-    "@types/pako": "^2.0.4",
-    "astro": "^6.4.8",
-    "daisyui": "^5.5.19",
-    "prettier": "^3.8.3",
+    "@astrojs/svelte": "^9.0.1",
+    "@tailwindcss/vite": "^4.3.3",
+    "@vitest/browser-playwright": "^4.1.10",
+    "astro": "^7.1.3",
+    "daisyui": "^5.7.4",
+    "playwright": "^1.62.0",
+    "prettier": "^3.9.6",
     "prettier-plugin-astro": "^0.14.1",
-    "prettier-plugin-svelte": "^3.5.1",
-    "tailwindcss": "^4.2.4",
+    "prettier-plugin-svelte": "^4.1.1",
+    "tailwindcss": "^4.3.3",
     "typescript": "^6.0.3",
     "vitest": "^4.1.10",
-    "wrangler": "4.111.0"
+    "wrangler": "4.114.0"
   }
 }

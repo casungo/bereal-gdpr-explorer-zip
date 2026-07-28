@@ -15,7 +15,11 @@ jobs:
           node-version: 22
           cache: pnpm
       - run: pnpm install --frozen-lockfile
+      - run: pnpm exec playwright install --with-deps chromium
       - run: pnpm format:check
       - run: pnpm test
+      - run: pnpm test:browser
+      - run: pnpm assets:brand
+      - run: git diff --exit-code -- public/og-image.png public/icon-maskable-512.png
       - run: pnpm check
       - run: pnpm build

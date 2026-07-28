@@ -1,10 +1,11 @@
-const CACHE_NAME = "bereal-shell-v2";
+const CACHE_NAME = "bereal-shell-v2.1.0";
 const SHELL_URLS = [
   "/",
   "/manifest.webmanifest",
   "/favicon.ico",
   "/icon-192.png",
   "/icon-512.png",
+  "/icon-maskable-512.png",
 ];
 const STATIC_DESTINATIONS = new Set(["script", "style", "font", "image"]);
 
