@@ -1,4 +1,4 @@
-const CACHE_NAME = "bereal-shell-v1";
+const CACHE_NAME = "bereal-shell-v2";
 const SHELL_URLS = [
   "/",
   "/manifest.webmanifest",

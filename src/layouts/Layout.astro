@@ -1,26 +1,56 @@
 ---
 import "@/assets/app.css";
+import {
+  APP_DESCRIPTION,
+  APP_NAME,
+  APP_SHORT_NAME,
+  BRAND_COLOR,
+} from "@/lib/brand";
 
 export interface Props {
-  title: string;
+  title?: string;
+  description?: string;
 }
 
-// biome-ignore lint/correctness/noUnusedVariables: used in template
-const { title } = Astro.props;
+const { title = APP_NAME, description = APP_DESCRIPTION } = Astro.props;
+const canonicalUrl = new URL(
+  Astro.url.pathname,
+  Astro.site ?? Astro.url.origin,
+);
+const logoUrl = new URL("/icon-512.png", Astro.site ?? Astro.url.origin);
 ---
 
 <!doctype html>
 <html lang="en" data-theme="bereal-light">
   <head>
     <meta charset="UTF-8" />
-    <meta
-      name="description"
-      content="A privacy-focused tool to explore and analyze your BeReal GDPR data export."
-    />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="oklch(0.54 0.205 264)" />
+    <meta name="description" content={description} />
+    <meta name="application-name" content={APP_NAME} />
+    <meta name="apple-mobile-web-app-title" content={APP_SHORT_NAME} />
+    <meta name="theme-color" content={BRAND_COLOR} />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content={APP_NAME} />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonicalUrl} />
+    <meta property="og:image" content={logoUrl} />
+    <meta property="og:image:width" content="512" />
+    <meta property="og:image:height" content="512" />
+    <meta property="og:image:alt" content={`${APP_NAME} logo`} />
+
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content={title} />
+    <meta name="twitter:description" content={description} />
+    <meta name="twitter:image" content={logoUrl} />
+    <meta name="twitter:image:alt" content={`${APP_NAME} logo`} />
+
+    <link rel="canonical" href={canonicalUrl} />
     <link rel="manifest" href="/manifest.webmanifest" />
-    <link rel="icon" type="image/x-icon" href="/favicon.ico" />
+    <link rel="icon" href="/favicon.ico" sizes="any" />
+    <link rel="icon" type="image/png" href="/icon-192.png" sizes="192x192" />
+    <link rel="apple-touch-icon" href="/icon-192.png" />
     <meta name="generator" content={Astro.generator} />
     <title>{title}</title>
   </head>

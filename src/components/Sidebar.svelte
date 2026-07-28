@@ -13,7 +13,9 @@
     FileCheck2,
     LogOut,
   } from "@lucide/svelte";
+  import BrandLogo from "@/components/BrandLogo.svelte";
   import ThemeToggle from "@/components/ui/ThemeToggle.svelte";
+  import { APP_NAME } from "@/lib/brand";
   import { APP_VERSION } from "@/lib/version";
 
   export type TabId =
@@ -103,15 +105,13 @@
   <div class="p-4">
     <div class="flex items-center justify-between">
       <div class="flex items-center gap-3">
-        <div
-          class="flex size-10 rotate-3 items-center justify-center rounded-xl bg-primary shadow-md shadow-primary/20"
-        >
-          <span class="text-primary-content font-bold text-sm">BR</span>
-        </div>
-        <div>
-          <h1 class="text-lg font-bold tracking-tight">BeReal GDPR</h1>
+        <BrandLogo class="size-10" />
+        <div class="min-w-0">
+          <h1 class="truncate text-base font-bold tracking-tight">
+            {APP_NAME}
+          </h1>
           <p class="text-xs text-base-content/60 tabular-nums">
-            Explorer v{APP_VERSION}
+            Private archive · v{APP_VERSION}
           </p>
         </div>
       </div>

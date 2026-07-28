@@ -1,5 +1,6 @@
 <script lang="ts">
   import { Menu } from "@lucide/svelte";
+  import BrandLogo from "@/components/BrandLogo.svelte";
 
   let {
     sidebarOpen = $bindable(false),
@@ -32,7 +33,8 @@
           <Menu class="w-6 h-6" />
         </label>
       </div>
-      <div class="flex-1">
+      <div class="flex min-w-0 flex-1 items-center gap-3">
+        <BrandLogo class="size-8" />
         <h1 class="text-xl font-semibold">
           {title}
         </h1>

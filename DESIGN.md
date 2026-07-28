@@ -2,8 +2,9 @@
 name: BeReal GDPR Explorer
 description: A private, clear workspace for exploring a personal BeReal archive.
 colors:
-  archive-blue: "oklch(0.54 0.205 264)"
-  archive-blue-dark: "oklch(0.73 0.145 264)"
+  archive-blue: "oklch(0.437 0.15 257.128)"
+  archive-blue-dark: "oklch(0.73 0.14 257.128)"
+  mark-yellow: "oklch(0.941 0.2 105.689)"
   memory-coral: "oklch(0.61 0.185 28)"
   memory-coral-dark: "oklch(0.74 0.145 28)"
   local-green: "oklch(0.58 0.145 154)"
@@ -117,7 +118,17 @@ The system is functionally dense but never corporate. Familiar controls, short s
 - Compact, reassuring controls with complete interaction feedback.
 - Light and dark themes that preserve the same hierarchy and semantics.
 
-## 2. Colors
+## 2. Logo
+
+The definitive mark is the existing app icon: a white **B** centered inside a ring of twelve yellow stars on Archive Blue. The canonical assets are `public/icon-192.png`, `public/icon-512.png`, and `public/favicon.ico`.
+
+- Use the image asset everywhere; never recreate the mark with text, an icon library, or CSS.
+- Keep its colors, proportions, and orientation unchanged.
+- Present it as a square with an 18.75% corner radius in the interface. Platforms may apply their own icon mask.
+- Use an empty alt attribute when the full product name is adjacent; otherwise use “BeReal GDPR Explorer logo”.
+- Mark Yellow belongs to the logo only. It is not an action, selection, or warning color in the interface.
+
+## 3. Colors
 
 Archive Blue leads a cool, quiet neutral system; Memory Coral and Local Green remain purposeful supporting voices for distinction and state.
 
@@ -149,7 +160,7 @@ Archive Blue leads a cool, quiet neutral system; Memory Coral and Local Green re
 
 **The Semantic Evidence Rule.** Success, warning, and error are never communicated by color alone; pair them with explicit copy or recognizable iconography.
 
-## 3. Typography
+## 4. Typography
 
 **Display Font:** Inter with the system sans-serif stack
 **Body Font:** Inter with the system sans-serif stack
@@ -171,7 +182,7 @@ Archive Blue leads a cool, quiet neutral system; Memory Coral and Local Green re
 
 **The Human Reading Rule.** Explanatory text wraps naturally and stays within 65–75 characters; data structures may run wider when scanning benefits.
 
-## 4. Elevation
+## 5. Elevation
 
 Elevation is layered and structural. Tonal surface changes establish most hierarchy; small shadows separate interactive or floating surfaces only when adjacency would otherwise be ambiguous. Dialogs and the file drop zone may carry stronger elevation because they represent a focused task boundary.
 
@@ -188,7 +199,7 @@ Elevation is layered and structural. Tonal surface changes establish most hierar
 
 **The Tonal First Rule.** Establish depth with Quiet Canvas layers before adding elevation.
 
-## 5. Components
+## 6. Components
 
 Components are familiar, compact, and reassuring. Every interactive control preserves the same shape language and provides visible hover, focus, active, disabled, loading, and error feedback where applicable.
 
@@ -230,7 +241,7 @@ The drop zone is the signature entry component. It combines a large, clearly lab
 
 Use the native dialog model for focused export decisions. Dialogs cap their width, keep actions predictable, explain validation inline, and return focus safely on close. A modal is reserved for tasks that truly interrupt the current view.
 
-## 6. Do's and Don'ts
+## 7. Do's and Don'ts
 
 ### Do:
 

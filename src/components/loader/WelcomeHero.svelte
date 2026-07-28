@@ -1,21 +1,19 @@
 <script lang="ts">
   import { ExternalLink } from "@lucide/svelte";
+  import BrandLogo from "@/components/BrandLogo.svelte";
+  import { APP_NAME } from "@/lib/brand";
   import { APP_VERSION } from "@/lib/version";
 </script>
 
 <header class="mb-10 text-center md:mb-12">
-  <div
-    class="mx-auto mb-5 flex size-16 rotate-3 items-center justify-center rounded-2xl bg-primary text-xl font-black tracking-[-0.08em] text-primary-content shadow-lg shadow-primary/20"
-    aria-hidden="true"
-  >
-    BR
-  </div>
-  <h1 class="text-4xl font-bold tracking-tight text-balance md:text-6xl">
-    Your BeReal archive,<br class="hidden sm:block" /> made clear.
-  </h1>
-  <div class="mt-4">
+  <BrandLogo class="mx-auto size-20" alt="{APP_NAME} logo" priority={true} />
+  <div class="mt-5 flex flex-wrap items-center justify-center gap-2">
+    <span class="font-semibold text-base-content/80">{APP_NAME}</span>
     <span class="badge badge-primary badge-outline">v{APP_VERSION}</span>
   </div>
+  <h1 class="mt-4 text-4xl font-bold tracking-tight text-balance md:text-6xl">
+    Your BeReal archive,<br class="hidden sm:block" /> made clear.
+  </h1>
   <p
     class="mx-auto mt-5 max-w-2xl text-lg leading-relaxed text-base-content/70 md:text-xl"
   >

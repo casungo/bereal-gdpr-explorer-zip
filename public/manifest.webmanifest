@@ -1,11 +1,11 @@
 {
   "name": "BeReal GDPR Explorer",
   "short_name": "BeReal Explorer",
-  "description": "Explore a BeReal GDPR export privately in your browser.",
+  "description": "Explore your BeReal GDPR archive privately, entirely in your browser.",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#f0f2f5",
-  "theme_color": "#006783",
+  "theme_color": "#074EA2",
   "icons": [
     {
       "src": "/icon-192.png",
