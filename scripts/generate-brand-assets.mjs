@@ -6,6 +6,13 @@ const projectRoot = new URL("../", import.meta.url);
 const publicDirectory = new URL("public/", projectRoot);
 const iconBytes = await readFile(new URL("icon-512.png", publicDirectory));
 const iconDataUrl = `data:image/png;base64,${iconBytes.toString("base64")}`;
+const interBytes = await readFile(
+  new URL(
+    import.meta
+      .resolve("@fontsource-variable/inter/files/inter-latin-wght-normal.woff2"),
+  ),
+);
+const interDataUrl = `data:font/woff2;base64,${interBytes.toString("base64")}`;
 
 const browser = await chromium.launch();
 
@@ -21,10 +28,16 @@ try {
       <head>
         <meta charset="utf-8" />
         <style>
+          @font-face {
+            font-family: "Brand Inter";
+            src: url("${interDataUrl}") format("woff2");
+            font-style: normal;
+            font-weight: 100 900;
+          }
           * { box-sizing: border-box; }
           html, body { margin: 0; width: 100%; height: 100%; }
           body {
-            font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            font-family: "Brand Inter", sans-serif;
           }
           #card {
             display: flex;
@@ -100,6 +113,7 @@ try {
       </body>
     </html>
   `);
+  await page.evaluate(() => document.fonts.ready);
   await page.locator("#card").screenshot({
     path: fileURLToPath(new URL("og-image.png", publicDirectory)),
   });
