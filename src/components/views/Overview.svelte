@@ -1,12 +1,16 @@
 <script lang="ts">
   import {
+    Archive,
+    ArrowRight,
     Users,
     GalleryHorizontal,
     SmilePlus,
     RefreshCcw,
     CheckCircle,
+    Lock,
   } from "@lucide/svelte";
   import EmptyState from "@/components/ui/EmptyState.svelte";
+  import DownloadDialog from "@/components/ui/DownloadDialog.svelte";
   import { format } from "date-fns";
   import type {
     BeRealData,
@@ -16,9 +20,10 @@
     Realmoji,
   } from "@/lib/types";
 
-  let { data, media } = $props<{
+  let { data, media, onBrowseMemories } = $props<{
     data: BeRealData;
     media: MediaMap;
+    onBrowseMemories: () => void;
   }>();
 
   const posts = $derived(data.posts ?? []);
@@ -26,6 +31,26 @@
   const friends = $derived(data.friends ?? []);
   const realmojis = $derived(data.realmojis ?? []);
   const allPosts: (Post | Memory)[] = $derived([...posts, ...memories]);
+  let downloadDialogOpen = $state(false);
+
+  const archiveDates = $derived(
+    allPosts
+      .map(
+        (item) => new Date("takenAt" in item ? item.takenAt : item.takenTime),
+      )
+      .filter((date) => !Number.isNaN(date.getTime()))
+      .sort((a, b) => a.getTime() - b.getTime()),
+  );
+  const archivePeriod = $derived(
+    archiveDates.length === 0
+      ? ""
+      : archiveDates.length === 1
+        ? format(archiveDates[0], "MMMM yyyy")
+        : `${format(archiveDates[0], "MMM yyyy")}–${format(
+            archiveDates[archiveDates.length - 1],
+            "MMM yyyy",
+          )}`,
+  );
 
   const postsByMonth = $derived.by(() =>
     allPosts.reduce(
@@ -137,6 +162,57 @@
 </script>
 
 <div class="space-y-6">
+  <section
+    class="overflow-hidden rounded-2xl bg-primary text-primary-content shadow-sm"
+    aria-labelledby="archive-ready-title"
+  >
+    <div
+      class="flex flex-col gap-6 p-6 md:flex-row md:items-center md:justify-between md:p-8"
+    >
+      <div class="max-w-2xl">
+        <div class="mb-3 flex items-center gap-2 text-sm font-semibold">
+          <CheckCircle class="size-5" />
+          Import complete
+        </div>
+        <h2
+          id="archive-ready-title"
+          class="text-2xl font-bold tracking-tight text-balance md:text-3xl"
+        >
+          Your archive is ready to keep.
+        </h2>
+        <p class="mt-3 max-w-prose leading-relaxed text-primary-content/80">
+          We found {allPosts.length}
+          {allPosts.length === 1 ? " memory" : " memories"}{archivePeriod
+            ? ` from ${archivePeriod}`
+            : ""}. Save a complete, date-organized copy with both cameras,
+          merged photos, metadata, and available videos.
+        </p>
+        <p class="mt-4 flex items-center gap-2 text-sm text-primary-content/75">
+          <Lock class="size-4 shrink-0" />
+          Prepared entirely in this browser. Nothing is uploaded.
+        </p>
+      </div>
+
+      <div class="flex shrink-0 flex-col gap-3 sm:flex-row md:flex-col">
+        <button
+          class="btn border-0 bg-primary-content text-primary hover:bg-primary-content/90"
+          disabled={allPosts.length === 0}
+          onclick={() => (downloadDialogOpen = true)}
+        >
+          <Archive class="size-5" />
+          Download complete archive
+        </button>
+        <button
+          class="btn btn-ghost text-primary-content hover:bg-primary-content/10"
+          onclick={onBrowseMemories}
+        >
+          Browse memories
+          <ArrowRight class="size-4" />
+        </button>
+      </div>
+    </div>
+  </section>
+
   <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-5">
     <div class="stats bg-base-100 shadow">
       <div class="stat">
@@ -427,6 +503,15 @@
     </div>
   </div>
 </div>
+
+<DownloadDialog
+  isOpen={downloadDialogOpen}
+  onOpenChange={(open) => (downloadDialogOpen = open)}
+  posts={allPosts}
+  mediaMap={media}
+  defaultZipName="bereal-complete-archive"
+  itemName="memory"
+/>
 
 <style>
   .rotate-45 {

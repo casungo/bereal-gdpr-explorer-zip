@@ -56,6 +56,13 @@
     preset === "complete" ? completeSelection : customSelection,
   );
   const canDownload = $derived(hasSelectedMedia(activeSelection));
+  const selectedItemLabel = $derived(
+    posts.length === 1
+      ? itemName
+      : itemName === "memory"
+        ? "memories"
+        : `${itemName}s`,
+  );
 
   $effect(() => {
     if (!dialogRef) return;
@@ -166,6 +173,17 @@
         <p class="mt-2 max-w-64 text-sm opacity-70">
           Your export is being prepared by the browser.
         </p>
+        <a
+          class="btn btn-link mt-4 h-auto min-h-0 px-0 text-sm"
+          href="https://github.com/casungo/bereal-gdpr-explorer-zip/issues/new?title=Archive%20export%20feedback"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          Tell us if this was useful
+        </a>
+        <p class="mt-1 max-w-64 text-xs opacity-60">
+          Opens GitHub. No archive data is included.
+        </p>
       </div>
 
       <div class="modal-action">
@@ -179,11 +197,7 @@
           <h3 class="text-xl font-bold">Download</h3>
           <p class="mt-1 text-sm opacity-70">
             {posts.length}
-            {itemName}{posts.length !== 1
-              ? itemName === "memory"
-                ? "ies"
-                : "s"
-              : ""} selected ·
+            {selectedItemLabel} selected ·
             <span class:text-primary={hasVideoDownloads}>
               {videoCount}
               video{videoCount !== 1 ? "s" : ""} available

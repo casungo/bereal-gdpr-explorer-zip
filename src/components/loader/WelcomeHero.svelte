@@ -24,7 +24,16 @@
     Request your export from BeReal support in the app, or use the official
     request form and ask for a downloadable copy of your account data.
   </p>
-  <div class="mt-6 flex justify-center">
+  <div class="mt-6 flex flex-col items-center justify-center gap-2 sm:flex-row">
+    <a
+      href="https://help.bereal.com/hc/en-us/requests/new"
+      target="_blank"
+      rel="noopener noreferrer"
+      class="btn btn-outline gap-2"
+    >
+      <ExternalLink class="w-5 h-5" />
+      <span class="font-medium">Request your BeReal export</span>
+    </a>
     <a
       href="https://github.com/casungo/bereal-gdpr-explorer-zip"
       target="_blank"

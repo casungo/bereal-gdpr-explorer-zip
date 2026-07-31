@@ -131,7 +131,11 @@
       </div>
     </div>
   {:else if activeTab === "overview"}
-    <Overview {data} {media} />
+    <Overview
+      {data}
+      {media}
+      onBrowseMemories={() => setActiveTab("memories")}
+    />
   {:else if activeTab === "user"}
     <UserInfo user={data.user} {media} />
   {:else if activeTab === "friends"}
