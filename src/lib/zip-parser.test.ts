@@ -18,6 +18,7 @@ interface ArchiveOptions {
   sections?: Record<string, unknown>;
   media?: Record<string, Uint8Array>;
   absoluteSections?: Record<string, unknown>;
+  absoluteMedia?: Record<string, Uint8Array>;
   rawSections?: Record<string, string>;
   leadingDirectories?: string[];
   analyticsLines?: unknown[];
@@ -29,6 +30,7 @@ async function makeArchive({
   sections = {},
   media = {},
   absoluteSections = {},
+  absoluteMedia = {},
   rawSections = {},
   leadingDirectories = [],
   analyticsLines,
@@ -52,6 +54,9 @@ async function makeArchive({
   }
   for (const [path, value] of Object.entries(absoluteSections)) {
     zip.file(path, JSON.stringify(value));
+  }
+  for (const [path, value] of Object.entries(absoluteMedia)) {
+    zip.file(path, value);
   }
   for (const [path, value] of Object.entries(rawSections)) {
     root.file(path, value);
@@ -328,6 +333,81 @@ describe("parseBeRealZip", () => {
     expect(data.user?.username).toBe("alice");
     expect(data.conversations?.[0]?.messages[0]?.content).toBe("flat message");
     expect(media[mediaPath]).toBe(media["Photos/flat.jpg"]);
+  });
+
+  it("only parses conversations beneath the selected export root", async () => {
+    const archive = await makeArchive({
+      wrapperPrefix: "bereal-export",
+      sections: {
+        "user.json": user(),
+        "conversations/selected/chat_log.json": {
+          messages: [
+            {
+              userId: "user-1",
+              message: "selected conversation",
+              createdAt: "2026-01-05T10:01:00.000Z",
+            },
+          ],
+        },
+      },
+      absoluteSections: {
+        "conversations/unrelated/chat_log.json": {
+          messages: [
+            {
+              userId: "other-user",
+              message: "unrelated conversation",
+              createdAt: "2026-01-05T10:02:00.000Z",
+            },
+          ],
+        },
+      },
+    });
+
+    const { data, report } = await parseBeRealZip(
+      archive.zipFile,
+      archive.gzFile,
+      vi.fn(),
+    );
+
+    expect(data.conversations).toEqual([
+      expect.objectContaining({ id: "selected" }),
+    ]);
+    expect(data.conversations?.[0]?.messages[0]?.content).toBe(
+      "selected conversation",
+    );
+    expect(
+      report.sections.find((section) => section.section === "conversations"),
+    ).toMatchObject({ acceptedRecords: 1, skippedRecords: 0 });
+  });
+
+  it("ignores media and report entries outside the selected export root", async () => {
+    const archive = await makeArchive({
+      wrapperPrefix: "bereal-export",
+      sections: {
+        "user.json": user(),
+        "posts.json": [
+          {
+            id: "selected-post",
+            primary: image("Photos/same.jpg"),
+            secondary: image("Photos/same.jpg"),
+            takenAt: "2026-01-05T10:00:00.000Z",
+          },
+        ],
+      },
+      media: { "Photos/same.jpg": new Uint8Array([1]) },
+      absoluteSections: { "outside.json": { unrelated: true } },
+      absoluteMedia: { "Photos/same.jpg": new Uint8Array([2]) },
+    });
+
+    const { media, report } = await parseBeRealZip(
+      archive.zipFile,
+      archive.gzFile,
+      vi.fn(),
+    );
+
+    expect(URL.createObjectURL).toHaveBeenCalledTimes(1);
+    expect(media["Photos/same.jpg"]).toBe("blob:media-1");
+    expect(report.unknownJsonFiles).toBe(0);
   });
 
   it("ignores a root __MACOSX directory beside a wrapped export", async () => {

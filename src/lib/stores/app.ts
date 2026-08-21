@@ -63,12 +63,12 @@ function createAppStore(): AppStore {
       return;
     }
 
-    if (!zipFile.name.endsWith(".zip")) {
+    if (!zipFile.name.toLowerCase().endsWith(".zip")) {
       error.set("Please select a valid ZIP file.");
       return;
     }
 
-    if (gzFile && !gzFile.name.endsWith(".gz")) {
+    if (gzFile && !gzFile.name.toLowerCase().endsWith(".gz")) {
       error.set("Please select a valid GZ file.");
       return;
     }

@@ -1,4 +1,5 @@
 import JSZip from "jszip";
+import { gzip } from "pako";
 import { get } from "svelte/store";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { appStore } from "./app";
@@ -42,6 +43,30 @@ describe("app import report lifecycle", () => {
       null,
     );
     expect(get(appStore.report)).toBeNull();
+  });
+
+  it("accepts uppercase export and analytics extensions", async () => {
+    const zip = new JSZip();
+    zip.file(
+      "user.json",
+      JSON.stringify({ username: "fixture", fullname: "Fixture User" }),
+    );
+    const zipFile = file(
+      await zip.generateAsync({ type: "arraybuffer" }),
+      "BEREAL-EXPORT.ZIP",
+      "application/zip",
+    );
+    const analyticsFile = file(
+      gzip(JSON.stringify({ event_type: "opened", event_time: 1 })),
+      "ANALYTICS.JSON.GZ",
+      "application/gzip",
+    );
+
+    await appStore.loadFiles(zipFile, analyticsFile);
+
+    expect(get(appStore.data)?.user?.username).toBe("fixture");
+    expect(get(appStore.data)?.analytics).toHaveLength(1);
+    expect(get(appStore.error)).toBeNull();
   });
 
   it("loads a populated demo across every dashboard collection", () => {

@@ -115,12 +115,18 @@ function detectExportRoot(files: Record<string, JSZip.JSZipObject>): string {
   return bestRoots[0][0];
 }
 
+function relativeExportPath(path: string, exportRoot: string): string | null {
+  if (!exportRoot) return path;
+  const prefix = `${exportRoot}/`;
+  return path.startsWith(prefix) ? path.slice(prefix.length) : null;
+}
+
 async function readFileAsArrayBuffer(file: File): Promise<ArrayBuffer> {
   if (
     !ALLOWED_MIME_TYPES.some(
       (type) =>
         file.type.includes(type) ||
-        file.name.endsWith(type.includes("zip") ? ".zip" : ".gz"),
+        file.name.toLowerCase().endsWith(type.includes("zip") ? ".zip" : ".gz"),
     )
   ) {
     archiveError(
@@ -671,6 +677,19 @@ interface RawChatLog {
   messages: RawChatMessage[];
 }
 
+function selectedConversationFiles(
+  files: Record<string, JSZip.JSZipObject>,
+  exportRoot: string,
+): { path: string; id: string }[] {
+  return Object.keys(files).flatMap((path) => {
+    const relativePath = relativeExportPath(path, exportRoot);
+    const match = relativePath?.match(
+      /^conversations\/([^/]+)\/chat_log\.json$/,
+    );
+    return match ? [{ path, id: match[1] }] : [];
+  });
+}
+
 function isChatParticipant(
   value: unknown,
 ): value is { id: string; username: string } {
@@ -724,58 +743,52 @@ function validateChatLog(value: unknown): ValidatedValue<RawChatLog> | null {
 
 async function parseConversations(
   zip: JSZip,
+  conversationFiles: { path: string; id: string }[],
   warnings: ImportWarning[],
 ): Promise<Conversation[]> {
-  const chatLogRegex = /^(?:[^/]+\/)?conversations\/([^/]+)\/chat_log\.json$/;
+  const conversationPromises = conversationFiles.map(
+    async ({ path, id: conversationId }) => {
+      const chatLogResult = await parseJsonSection(
+        zip,
+        path,
+        "conversations",
+        validateChatLog,
+        warnings,
+      );
+      const chatLog = chatLogResult.value;
 
-  const conversationPromises = Object.keys(zip.files)
-    .filter((path) => chatLogRegex.test(path))
-    .map(async (relativePath) => {
-      const match = relativePath.match(chatLogRegex);
-      if (match) {
-        const conversationId = match[1];
-        const chatLogResult = await parseJsonSection(
-          zip,
-          relativePath,
-          "conversations",
-          validateChatLog,
-          warnings,
-        );
-        const chatLog = chatLogResult.value;
+      if (chatLog && chatLog.messages) {
+        const messages: ChatMessage[] = chatLog.messages
+          .map((m, i) => ({
+            id: m.id || `${conversationId}-msg-${i}`,
+            senderId: m.userId,
+            content: m.message,
+            creationDate: m.createdAt,
+            media: m.media
+              ? {
+                  ...m.media,
+                  path: normalizePath(m.media.path),
+                  type:
+                    m.media.mediaType ||
+                    (m.media.path.endsWith("mp4") ? "video" : "image"),
+                }
+              : undefined,
+          }))
+          .sort(
+            (a, b) =>
+              new Date(a.creationDate).getTime() -
+              new Date(b.creationDate).getTime(),
+          );
 
-        if (chatLog && chatLog.messages) {
-          const messages: ChatMessage[] = chatLog.messages
-            .map((m, i) => ({
-              id: m.id || `${conversationId}-msg-${i}`,
-              senderId: m.userId,
-              content: m.message,
-              creationDate: m.createdAt,
-              media: m.media
-                ? {
-                    ...m.media,
-                    path: normalizePath(m.media.path),
-                    type:
-                      m.media.mediaType ||
-                      (m.media.path.endsWith("mp4") ? "video" : "image"),
-                  }
-                : undefined,
-            }))
-            .sort(
-              (a, b) =>
-                new Date(a.creationDate).getTime() -
-                new Date(b.creationDate).getTime(),
-            );
-
-          const conversation: Conversation = {
-            id: conversationId,
-            participants: chatLog.participants || [],
-            messages: messages,
-          };
-          return conversation;
-        }
+        return {
+          id: conversationId,
+          participants: chatLog.participants || [],
+          messages,
+        };
       }
       return null;
-    });
+    },
+  );
 
   const resolvedConversations = await Promise.all(conversationPromises);
   return resolvedConversations.filter((c): c is Conversation => c !== null);
@@ -815,11 +828,11 @@ export async function parseBeRealZip(
     throw new Error("Progress callback is required");
   }
 
-  if (!zipFile.name.endsWith(".zip")) {
+  if (!zipFile.name.toLowerCase().endsWith(".zip")) {
     archiveError("INVALID_FILE_TYPE", "First file must be a .zip file");
   }
 
-  if (gzFile && !gzFile.name.endsWith(".gz")) {
+  if (gzFile && !gzFile.name.toLowerCase().endsWith(".gz")) {
     archiveError("INVALID_FILE_TYPE", "Second file must be a .gz file");
   }
 
@@ -1238,20 +1251,21 @@ export async function parseBeRealZip(
   }
 
   onProgress({ total: 100, loaded: 50, message: "Parsing conversations..." });
-  data.conversations = await parseConversations(rawZip, warnings);
-  const conversationFileCount = Object.keys(rawZip.files).filter((name) =>
-    /^(?:[^/]+\/)?conversations\/[^/]+\/chat_log\.json$/.test(name),
-  ).length;
+  const conversationFiles = selectedConversationFiles(rawZip.files, exportRoot);
+  data.conversations = await parseConversations(
+    rawZip,
+    conversationFiles,
+    warnings,
+  );
+  const conversationFileCount = conversationFiles.length;
 
   onProgress({ total: 100, loaded: 60, message: "Extracting media..." });
 
   const mediaFiles = Object.values(zip.files).filter((file) => {
-    const relativePath =
-      exportRoot && file.name.startsWith(`${exportRoot}/`)
-        ? file.name.slice(exportRoot.length + 1)
-        : file.name;
+    const relativePath = relativeExportPath(file.name, exportRoot);
     return (
       !file.dir &&
+      relativePath !== null &&
       (relativePath.startsWith("Photos/") ||
         relativePath.startsWith("conversations/") ||
         relativePath.startsWith("profile-pictures/"))
@@ -1311,10 +1325,7 @@ export async function parseBeRealZip(
 
       results.forEach((result) => {
         media[result.path] = result.url;
-        const relativePath =
-          exportRoot && result.path.startsWith(`${exportRoot}/`)
-            ? result.path.slice(exportRoot.length + 1)
-            : result.path;
+        const relativePath = relativeExportPath(result.path, exportRoot)!;
         if (relativePath !== result.path) {
           media[relativePath] = result.url;
         }
@@ -1362,13 +1373,10 @@ export async function parseBeRealZip(
       .filter((warning) => warning.section === section)
       .map((warning) => warning.code),
   });
-  const relativeEntries = Object.values(zip.files).map((file) => ({
-    file,
-    name:
-      exportRoot && file.name.startsWith(`${exportRoot}/`)
-        ? file.name.slice(exportRoot.length + 1)
-        : file.name,
-  }));
+  const relativeEntries = Object.values(zip.files).flatMap((file) => {
+    const name = relativeExportPath(file.name, exportRoot);
+    return name === null ? [] : [{ file, name }];
+  });
   const unknownJsonFiles = relativeEntries.filter(
     ({ file, name }) =>
       !file.dir &&

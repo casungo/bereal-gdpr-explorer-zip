@@ -1,41 +1,53 @@
-# Product
+# Product PRD — BeReal GDPR Explorer
 
-## Register
+Audit date: 2026-08-12
+Status: public browser tool; live demo flow verified, real archive use not measured.
 
-product
+## Intent
 
-## Platform
+- Target users: BeReal users who have requested a GDPR archive and want to understand, browse, and save its contents without uploading personal data.
+- Core job: turn an unfamiliar BeReal ZIP or `json.gz` export into understandable posts, memories, relationships, conversations, analytics, and media.
+- Non-goals: a BeReal replacement, an account-connected service, server-side archive processing, tracking, or a claim of official BeReal affiliation.
 
-web
+## Current maturity
 
-## Users
+### Shipped or verified in the repository
 
-The primary user is someone who has requested their GDPR archive from BeReal and wants to understand, explore, and export its contents without entrusting personal data to a server. They may arrive with little knowledge of the archive's structure and need the product to turn unfamiliar files into recognizable memories and useful information.
+The browser app validates supported archives, enforces size/entry/expansion limits, parses metadata and media, and exposes archive reports plus views for posts, memories, friends, conversations, analytics, and related data. Local processing, in-memory state, offline shell behavior, and download/export paths are documented. Automated test, check, and build scripts are present.
 
-## Product Purpose
+### Real-use evidence
 
-BeReal GDPR Explorer imports a user's BeReal data export, explains what it contains, and makes posts, memories, relationships, conversations, analytics, and media easy to browse and download. Processing stays entirely in the browser. Success means the user can import the archive without difficulty, understand its contents, and quickly find or save the memories and information they care about.
+`https://berealgdprviewer.eu/` returned 200. A live read-only browser session opened the in-memory demo and rendered the overview, navigation, counts, posting frequency, visibility, realmojis, conversations, and analytics sections. No user archive was uploaded, so compatibility across real GDPR export variants and retention are unverified by design.
 
-## Positioning
+## Work state
 
-The simplest, most private way to turn a BeReal GDPR archive into memories and information that are genuinely explorable, entirely in the browser.
+- Completed: privacy-preserving archive flow, media-aware browsing, demo data, responsive dashboard, and documented limits.
+- Active: compatibility and maintenance based on real export reports.
+- Blocked: no implementation blocker found; real-user evidence is intentionally absent from the privacy-preserving product.
+- Frozen/undecided: no server upload or account feature is planned.
 
-## Brand Personality
+## Next action / owner decision
 
-Private, clear, and reliable. The product should feel calm and capable: it handles sensitive personal data without alarmism, explains unfamiliar material in plain language, and gives users confidence that they remain in control.
+Collect privacy-preserving compatibility reports from several real export shapes and use them to prioritize parser fixes without adding telemetry or uploads.
 
-## Anti-references
+## Anti-slop audit
 
-The experience must not resemble an enterprise dashboard, a dark and alarming hacker-style privacy tool, or an imitation of BeReal's official interface. It should avoid corporate density, fear-based messaging, and borrowed brand mannerisms that could imply affiliation with BeReal.
+### Text
 
-## Design Principles
+No confirmed text defect at 75% confidence or higher. The live copy is specific about local processing, archive limits, and what the user can explore.
 
-1. **Make privacy tangible.** Show users where processing happens and preserve their sense of control at each sensitive step.
-2. **Translate archives into human meaning.** Organize technical export structures around recognizable memories, relationships, and activities.
-3. **Guide before asking.** Explain what files are needed, what will happen, and how to recover from problems before the user has to guess.
-4. **Keep the task in focus.** Familiar, consistent controls should disappear into importing, exploring, and exporting rather than competing for attention.
-5. **Earn trust through clarity.** Use precise language, honest limitations, and visible feedback instead of decorative claims or alarmist privacy language.
+### Code
 
-## Accessibility & Inclusion
+No confirmed anti-slop code defect at the threshold. The parser and limit handling have dedicated checks; no speculative cleanup was justified.
 
-Target WCAG 2.2 AA. Support complete keyboard navigation, visible focus states, sufficient text and control contrast, and status communication that does not rely on color alone. Respect `prefers-reduced-motion`, use clear language for technical concepts, and ensure import, exploration, and export workflows remain usable across responsive layouts and assistive technologies.
+### Design
+
+No confirmed design defect at the threshold. The live dashboard has clear hierarchy, task-specific navigation, restrained cards, and readable status messaging.
+
+## Evidence sources
+
+- [README.md](README.md)
+- [package.json](package.json)
+- `src/`
+- Live read-only check: [berealgdprviewer.eu](https://berealgdprviewer.eu/), 200 on 2026-08-12; demo flow only.
+- Existing product register was updated in this file rather than duplicated.
