@@ -1,5 +1,16 @@
 # Changelog
 
+## 2.1.1 - 2026-08-25
+
+### Changed
+
+- Completed the archive import flow for wrapped exports and uppercase ZIP/GZ filenames.
+- Updated Astro and Wrangler dependencies and made generated brand assets reproducible in CI.
+
+### Security
+
+- Hardened ZIP parsing with input, entry-count, expanded-size, and export-root limits.
+
 ## 2.1.0 - 2026-07-28
 
 ### Added

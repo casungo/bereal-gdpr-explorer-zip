@@ -1,0 +1,58 @@
+name: Publish release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  actions: write
+  contents: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.ref_name }}
+
+      - uses: pnpm/action-setup@v6
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Verify release
+        env:
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          test "$RELEASE_TAG" = "v$VERSION"
+          grep -Fq "## $VERSION -" CHANGELOG.md
+
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm format:check
+      - run: pnpm test
+      - run: pnpm test:browser
+      - run: pnpm check
+      - run: pnpm build
+
+      - name: Create GitHub release and start deployment
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: |
+          VERSION="${RELEASE_TAG#v}"
+          NOTES=$(awk -v version="$VERSION" '
+            $0 ~ "^## " version " - " { found=1; next }
+            found && /^## / { exit }
+            found { print }
+          ' CHANGELOG.md)
+          test -n "$NOTES"
+          gh release create "$RELEASE_TAG" \
+            --verify-tag \
+            --title "BeReal GDPR Explorer $RELEASE_TAG" \
+            --notes "$NOTES"
+          gh workflow run release.yml --ref "$RELEASE_TAG" -f tag="$RELEASE_TAG"
