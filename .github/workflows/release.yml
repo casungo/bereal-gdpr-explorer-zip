@@ -37,6 +37,7 @@ jobs:
           grep -Fq "## $VERSION -" CHANGELOG.md
 
       - run: pnpm install --frozen-lockfile
+      - run: pnpm exec playwright install --with-deps chromium
       - run: pnpm format:check
       - run: pnpm test
       - run: pnpm test:browser
