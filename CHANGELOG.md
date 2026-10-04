@@ -1,5 +1,26 @@
 # Changelog
 
+## 2.2.0 - 2026-10-04
+
+### Added
+
+- A public guide to requesting a BeReal data export, with official sources and a sample request.
+- Archive formats, processing limits, download instructions, and privacy FAQs on the viewer page.
+- A dedicated 404 page and checks for generated SEO metadata, sitemap contents, and offline navigation.
+
+### Changed
+
+- Clarified that BeReal GDPR Explorer opens your own exported ZIP with JSON records and media.
+- Kept the public product name consistent across the page title, interface, structured data, and app manifest.
+- Documented the verified Search Console baseline and the remaining publishing and measurement steps.
+
+### Fixed
+
+- Prevented the posting-frequency chart from widening the mobile dashboard.
+- Handled missing optional visibility and retake fields without crashing the dashboard or inventing values.
+- Preserved missing-page errors instead of serving the cached homepage for unrelated offline routes.
+- Added visible keyboard focus to the archive file selector.
+
 ## 2.1.1 - 2026-08-25
 
 ### Changed

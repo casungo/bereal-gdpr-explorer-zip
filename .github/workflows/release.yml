@@ -43,6 +43,7 @@ jobs:
       - run: pnpm test:browser
       - run: pnpm check
       - run: pnpm build
+      - run: pnpm verify:seo
 
       - name: Upload Worker version
         env:

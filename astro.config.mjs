@@ -17,7 +17,11 @@ export default defineConfig({
     },
   },
 
-  integrations: [svelte(), sitemap()],
+  trailingSlash: "always",
+  integrations: [
+    svelte(),
+    sitemap({ filter: (page) => !new URL(page).pathname.startsWith("/404") }),
+  ],
 
   build: {
     format: "directory",

@@ -22,3 +22,8 @@ pnpm-debug.log*
 
 # jetbrains setting folder
 .idea/
+
+# local hosting and browser verification
+.wrangler/
+.playwright-cli/
+output/playwright/

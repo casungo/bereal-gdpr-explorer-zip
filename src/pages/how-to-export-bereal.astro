@@ -1,0 +1,138 @@
+---
+import Layout from "@/layouts/Layout.astro";
+import { APP_DISCLAIMER, APP_NAME } from "@/lib/brand";
+---
+
+<Layout
+  title="How to request your BeReal data export and open the ZIP"
+  description="Request a downloadable copy of your BeReal data through its official privacy contact, then open the export ZIP in a free, local browser viewer."
+>
+  <main class="mx-auto max-w-3xl px-5 py-10 sm:py-16">
+    <nav aria-label="Breadcrumb" class="mb-8">
+      <a href="/" class="link link-primary">{APP_NAME}</a>
+    </nav>
+    <h1 class="text-4xl font-bold tracking-tight text-balance">
+      How to request your BeReal data export
+    </h1>
+    <p class="mt-5 text-lg leading-relaxed">
+      To browse your BeReal archive, first ask BeReal for a downloadable copy of
+      your personal data. This viewer opens the files you receive. It does not
+      connect to your BeReal account or submit a request for you.
+    </p>
+    <p class="mt-4 text-sm">
+      Official sources checked on <time datetime="2026-10-04"
+        >4 October 2026</time
+      >. {APP_DISCLAIMER}
+    </p>
+
+    <section class="mt-10 space-y-4" aria-labelledby="request-data">
+      <h2 id="request-data" class="text-2xl font-semibold">
+        1. Contact BeReal about your data
+      </h2>
+      <p>
+        BeReal's <a class="link link-primary" href="https://bereal.com/privacy"
+          >privacy policy</a
+        >{" "}
+        lists its Data Protection Team at <a
+          class="link link-primary"
+          href="mailto:dpo@bere.al">dpo@bere.al</a
+        >{" "}
+        for data rights requests. Ask for a copy of your account data in a downloadable,
+        machine-readable format. BeReal may ask for information to confirm that the
+        account belongs to you.
+      </p>
+      <p>
+        The <a
+          class="link link-primary"
+          href="https://help.bereal.com/hc/en-us/requests/new"
+          >official Help Center request form</a
+        >{" "}
+        is another support contact. Its available categories can change. Follow BeReal's
+        current instructions; this guide does not assume a particular in-app menu
+        or promise a delivery time.
+      </p>
+      <h3 class="text-xl font-semibold">Example request</h3>
+      <blockquote class="rounded-lg bg-base-100 p-5 leading-relaxed">
+        Hello BeReal Data Protection Team. I would like a downloadable,
+        machine-readable copy of the personal data associated with my BeReal
+        account, including available posts, memories and their media. Please
+        tell me what you need to identify my account and how I can securely
+        receive the export. Thank you.
+      </blockquote>
+      <p>
+        Add account details only in your private request to BeReal. Do not post
+        them in this viewer's issue tracker.
+      </p>
+    </section>
+
+    <section class="mt-10 space-y-4" aria-labelledby="keep-export">
+      <h2 id="keep-export" class="text-2xl font-semibold">
+        2. Download and keep the original export
+      </h2>
+      <p>
+        When BeReal provides your files, download them to your device and keep
+        an unchanged copy. This viewer supports a BeReal ZIP containing JSON
+        records and media, with an optional <code>.json.gz</code> analytics file.
+        A standalone JSON file is not enough to import an archive here.
+      </p>
+      <p>
+        The ZIP limit is 500 MiB and the optional compressed analytics limit is
+        100 MiB. Expanded data and entry counts also have limits, listed on the
+        <a class="link link-primary" href="/">viewer page</a>. Export formats
+        and included records can vary; compatibility with every BeReal export is
+        not guaranteed.
+      </p>
+    </section>
+
+    <section class="mt-10 space-y-4" aria-labelledby="open-export">
+      <h2 id="open-export" class="text-2xl font-semibold">
+        3. Open the ZIP and save your photos
+      </h2>
+      <ol class="list-decimal space-y-3 pl-6">
+        <li>
+          Open the viewer and select the BeReal ZIP. Add the analytics file if
+          you have it.
+        </li>
+        <li>
+          Select <strong>Analyze selected files</strong> and review the import report.
+        </li>
+        <li>
+          Browse the available posts, memories, friends and conversations.
+        </li>
+        <li>
+          Select <strong>Download complete archive</strong> to save media, or download
+          selected posts and memories.
+        </li>
+      </ol>
+      <p>
+        Separate camera downloads preserve the original image format. Merged
+        photos are JPEGs. Metadata includes timestamps and locations when they
+        are available. The viewer cannot restore records missing from the
+        export.
+      </p>
+      <a class="btn btn-primary" href="/#open-archive">Open your BeReal ZIP</a>
+      <p>
+        Free, no account or tracking. The browser reads your files locally,
+        without uploading them. Refreshing clears imported data from memory;
+        saved downloads remain on your device.
+      </p>
+    </section>
+
+    <section class="mt-10 space-y-4" aria-labelledby="export-questions">
+      <h2 id="export-questions" class="text-2xl font-semibold">
+        If you do not have a ZIP yet
+      </h2>
+      <p>
+        Try <strong>Explore demo data</strong> on the viewer page. It uses invented
+        records and illustrated images to show the browsing and download flow without
+        personal files. An empty section in your own archive can mean BeReal did not
+        include those records; check the import report before assuming the data was
+        lost.
+      </p>
+      <p>
+        Only BeReal can handle the data request. Check its current privacy
+        policy for the rights and procedures that apply to you.
+      </p>
+    </section>
+  </main>
+</Layout>

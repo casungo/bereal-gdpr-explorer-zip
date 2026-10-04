@@ -94,11 +94,16 @@
     allPosts.length > 0 ? Math.round((onTimePosts / allPosts.length) * 100) : 0,
   );
 
+  const postsWithRetakes = $derived(
+    posts.filter((post) => typeof post.retakeCounter === "number"),
+  );
   const totalRetakes = $derived(
-    posts.reduce((acc: number, p: Post) => acc + p.retakeCounter, 0),
+    postsWithRetakes.reduce((sum, post) => sum + (post.retakeCounter ?? 0), 0),
   );
   const avgRetakes = $derived(
-    posts.length > 0 ? (totalRetakes / posts.length).toFixed(1) : "0",
+    postsWithRetakes.length > 0
+      ? (totalRetakes / postsWithRetakes.length).toFixed(1)
+      : "Not provided",
   );
 
   const realmojiCounts = $derived.by(() =>
@@ -146,9 +151,11 @@
   const visibilityCounts = $derived.by(() =>
     posts.reduce(
       (acc: Record<string, number>, post: Post) => {
-        const key = post.visibility.includes("friends-of-friends")
-          ? "Friends of Friends"
-          : "Friends";
+        const key = !post.visibility?.length
+          ? "Not provided"
+          : post.visibility.includes("friends-of-friends")
+            ? "Friends of Friends"
+            : "Friends";
         acc[key] = (acc[key] || 0) + 1;
         return acc;
       },
@@ -287,7 +294,7 @@
   </div>
 
   <div class="grid gap-6 md:grid-cols-1 lg:grid-cols-2">
-    <div class="card bg-base-100 shadow-xl lg:col-span-2">
+    <div class="card min-w-0 bg-base-100 shadow-xl lg:col-span-2">
       <div class="card-body">
         <h2 class="card-title">Posting Frequency</h2>
         <p class="text-base-content/70">
@@ -420,7 +427,7 @@
       </div>
     </div>
 
-    <div class="card bg-base-100 shadow-xl lg:col-span-2">
+    <div class="card min-w-0 bg-base-100 shadow-xl lg:col-span-2">
       <div class="card-body">
         <h2 class="card-title">Top 5 Realmojis</h2>
         <p class="text-base-content/70">Your most frequently used reactions</p>

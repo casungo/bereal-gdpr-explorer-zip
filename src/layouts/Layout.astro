@@ -10,9 +10,16 @@ import {
 export interface Props {
   title?: string;
   description?: string;
+  noindex?: boolean;
+  application?: boolean;
 }
 
-const { title = APP_NAME, description = APP_DESCRIPTION } = Astro.props;
+const {
+  title = APP_NAME,
+  description = APP_DESCRIPTION,
+  noindex = false,
+  application = Astro.url.pathname === "/",
+} = Astro.props;
 const canonicalUrl = new URL(
   Astro.url.pathname,
   Astro.site ?? Astro.url.origin,
@@ -23,6 +30,7 @@ const structuredData = {
   "@context": "https://schema.org",
   "@type": "WebApplication",
   name: APP_NAME,
+  inLanguage: "en",
   description,
   url: canonicalUrl.toString(),
   image: logoUrl.toString(),
@@ -44,6 +52,7 @@ const structuredData = {
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="description" content={description} />
+    {noindex && <meta name="robots" content="noindex, follow" />}
     <meta name="application-name" content={APP_NAME} />
     <meta name="apple-mobile-web-app-title" content={APP_SHORT_NAME} />
     <meta name="theme-color" content={BRAND_COLOR} />
@@ -71,18 +80,23 @@ const structuredData = {
       content={`${APP_NAME}: Your BeReal archive, made clear.`}
     />
 
-    <link rel="canonical" href={canonicalUrl} />
+    {!noindex && <link rel="canonical" href={canonicalUrl} />}
+    <link rel="sitemap" href="/sitemap-index.xml" />
     <link rel="manifest" href="/manifest.webmanifest" />
     <link rel="icon" href="/favicon.ico" sizes="any" />
     <link rel="icon" type="image/png" href="/icon-192.png" sizes="192x192" />
     <link rel="apple-touch-icon" href="/icon-192.png" />
     <meta name="generator" content={Astro.generator} />
     <title>{title}</title>
-    <script
-      type="application/ld+json"
-      is:inline
-      set:html={JSON.stringify(structuredData)}
-    />
+    {
+      application && !noindex && (
+        <script
+          type="application/ld+json"
+          is:inline
+          set:html={JSON.stringify(structuredData)}
+        />
+      )
+    }
   </head>
   <body>
     <slot />

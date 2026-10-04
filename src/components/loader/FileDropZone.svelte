@@ -41,7 +41,7 @@
 </script>
 
 <div
-  class="group relative overflow-hidden rounded-2xl bg-base-100 shadow-[0_0_0_1px_oklch(0_0_0/0.06),0_16px_50px_-30px_oklch(0_0_0/0.35)] transition-[box-shadow,background-color,transform] duration-200 {isDragging
+  class="group focus-within:outline-3 focus-within:outline-primary focus-within:outline-offset-4 relative overflow-hidden rounded-2xl bg-base-100 shadow-[0_0_0_1px_oklch(0_0_0/0.06),0_16px_50px_-30px_oklch(0_0_0/0.35)] transition-[box-shadow,background-color,transform] duration-200 {isDragging
     ? 'bg-primary/8 shadow-[0_0_0_3px_color-mix(in_oklch,var(--color-primary)_35%,transparent)] scale-[1.01]'
     : ''} {zipFile || gzFile
     ? 'shadow-[0_0_0_2px_color-mix(in_oklch,var(--color-primary)_28%,transparent)]'
@@ -70,11 +70,12 @@
         : 'opacity-50'}"
     />
     <div class="text-xl font-bold tracking-tight text-balance md:text-2xl">
-      Drop your BeReal export here
+      Drop your own BeReal export ZIP here
     </div>
     <div class="mt-2 max-w-xl text-base-content/65 text-pretty">
-      Drag and drop the ZIP file, or click to browse. The JSON.GZ analytics file
-      is optional.
+      Choose the original ZIP with JSON records and media, or drag it here. A
+      standalone JSON file cannot be opened. The JSON.GZ analytics file is
+      optional.
     </div>
     <div
       class="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-lg mx-auto mt-6 w-full"

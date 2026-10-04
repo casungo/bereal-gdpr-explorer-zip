@@ -1,7 +1,7 @@
 {
   "name": "BeReal GDPR Explorer",
   "short_name": "BeReal Explorer",
-  "description": "Explore your BeReal GDPR archive privately, entirely in your browser.",
+  "description": "Open your own BeReal export ZIP with JSON records and media. Browse and save your archive locally, without uploads or tracking.",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#f0f2f5",

@@ -1,8 +1,9 @@
 ---
 import App from "@/components/App.svelte";
 import Layout from "@/layouts/Layout.astro";
+import { APP_TITLE } from "@/lib/brand";
 ---
 
-<Layout>
+<Layout title={APP_TITLE}>
   <App client:load />
 </Layout>

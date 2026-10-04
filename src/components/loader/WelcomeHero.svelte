@@ -12,27 +12,23 @@
     <span class="badge badge-primary badge-outline">v{APP_VERSION}</span>
   </div>
   <h1 class="mt-4 text-4xl font-bold tracking-tight text-balance md:text-6xl">
-    Your BeReal archive,<br class="hidden sm:block" /> made clear.
+    Open your own BeReal<br class="hidden sm:block" /> GDPR export.
   </h1>
   <p
     class="mx-auto mt-5 max-w-2xl text-lg leading-relaxed text-base-content/70 md:text-xl"
   >
-    Explore posts, memories, friends, and habits from your GDPR
-    export—privately, right in your browser.
+    Browse your own posts, memories and conversations from the ZIP BeReal sent
+    you. The archive contains JSON records and media. Processing stays in your
+    browser; download your photos to keep.
   </p>
   <p class="mx-auto mt-4 max-w-xl text-sm leading-relaxed text-base-content/60">
-    Request your export from BeReal support in the app, or use the official
-    request form and ask for a downloadable copy of your account data.
+    Free to use. No account, uploads or tracking. Your archive stays on this
+    device.
   </p>
   <div class="mt-6 flex flex-col items-center justify-center gap-2 sm:flex-row">
-    <a
-      href="https://help.bereal.com/hc/en-us/requests/new"
-      target="_blank"
-      rel="noopener noreferrer"
-      class="btn btn-outline gap-2"
-    >
+    <a href="/how-to-export-bereal/" class="btn btn-outline gap-2">
       <ExternalLink class="w-5 h-5" />
-      <span class="font-medium">Request your BeReal export</span>
+      <span class="font-medium">How to request your export</span>
     </a>
     <a
       href="https://github.com/casungo/bereal-gdpr-explorer-zip"
@@ -45,6 +41,7 @@
     </a>
   </div>
   <p class="mt-3 text-xs text-base-content/55">
+    This viewer does not access BeReal profiles or request your data for you.
     {APP_DISCLAIMER}
   </p>
 </header>

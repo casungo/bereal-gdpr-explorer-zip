@@ -1,7 +1,7 @@
 {
   "name": "bereal-gdpr-explorer-zip",
   "type": "module",
-  "version": "2.1.1",
+  "version": "2.2.0",
   "packageManager": "pnpm@11.9.0",
   "scripts": {
     "astro": "astro",
@@ -14,7 +14,8 @@
     "format:check": "prettier --check \"src/**/*.{ts,svelte,astro}\" \"scripts/**/*.mjs\" \"*.{json,js,ts,mjs}\"",
     "test": "vitest run --exclude \"**/*.browser.test.ts\"",
     "test:browser": "vitest run --config vitest.browser.config.ts",
-    "test:all": "pnpm test && pnpm test:browser"
+    "test:all": "pnpm test && pnpm test:browser",
+    "verify:seo": "node scripts/verify-seo.mjs"
   },
   "dependencies": {
     "@astrojs/sitemap": "^3.7.3",

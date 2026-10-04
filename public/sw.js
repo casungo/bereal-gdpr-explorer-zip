@@ -1,4 +1,4 @@
-const CACHE_NAME = "bereal-shell-v2.1.0";
+const CACHE_NAME = "bereal-shell-v2.2.0";
 const SHELL_URLS = [
   "/",
   "/manifest.webmanifest",
@@ -51,7 +51,10 @@ async function navigationResponse(request) {
     }
     return response;
   } catch {
-    return (await caches.match("/")) ?? Response.error();
+    if (new URL(request.url).pathname === "/") {
+      return (await caches.match("/")) ?? Response.error();
+    }
+    return Response.error();
   }
 }
 

@@ -96,6 +96,7 @@ pnpm test
 pnpm test:browser
 pnpm check
 pnpm build
+pnpm verify:seo
 ```
 
 The browser suite uses Chromium to verify canvas-generated merged images. Run
@@ -114,12 +115,18 @@ pnpm assets:brand
 BeReal does not provide a regular "export all" button in every account. To get
 your GDPR export, request a downloadable copy of your account data from BeReal:
 
-1. Open BeReal and go to your profile/settings help area, then contact support
-   with a request for a copy of your personal data.
-1. If you cannot use the in-app flow, submit a request through the official
-   [BeReal Help Center request form](https://help.bereal.com/hc/en-us/requests/new).
-1. When BeReal sends the export, download the `.zip` archive. If the export also
-   includes a `.json.gz` analytics file, you can add it too, but it is optional.
+1. Read BeReal's current [privacy policy](https://bereal.com/privacy). It lists
+   `dpo@bere.al` as the Data Protection Team contact for data rights requests.
+1. Ask BeReal for a downloadable, machine-readable copy of your account data.
+   The official [Help Center form](https://help.bereal.com/hc/en-us/requests/new)
+   is another support contact. Categories and in-app menus can change.
+1. Download the files BeReal supplies and keep an unchanged copy. This viewer
+   supports a `.zip` archive and optional `.json.gz` analytics file. Export
+   contents can vary, and compatibility with every variant is not guaranteed.
+
+Official sources checked on 2026-10-04. The viewer does not submit requests or
+connect to BeReal accounts. See the [export guide](https://berealgdprviewer.eu/how-to-export-bereal/)
+after it is published.
 
 ### Supported Files
 

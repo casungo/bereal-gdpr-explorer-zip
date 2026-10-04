@@ -3,6 +3,7 @@
   import { appStore } from "@/lib/stores/app";
   import WelcomeHero from "@/components/loader/WelcomeHero.svelte";
   import LoadingState from "@/components/loader/LoadingState.svelte";
+  import ArchiveHelp from "@/components/loader/ArchiveHelp.svelte";
   import FileDropZone from "@/components/loader/FileDropZone.svelte";
 
   const { isLoading, progress, error, loadFiles, loadDemoData } = appStore;
@@ -39,7 +40,7 @@
   <div class="w-full max-w-5xl mx-auto">
     <WelcomeHero />
 
-    <main>
+    <main id="open-archive">
       {#if $isLoading}
         <LoadingState progress={$progress} />
       {:else}
@@ -81,10 +82,7 @@
       {/if}
 
       <section class="mx-auto mt-10 max-w-3xl" aria-labelledby="how-it-works">
-        <h2
-          id="how-it-works"
-          class="text-center text-sm font-semibold uppercase tracking-wider text-base-content/55"
-        >
+        <h2 id="how-it-works" class="text-center text-xl font-semibold">
           What happens to your files
         </h2>
         <ol class="mt-5 grid gap-5 sm:grid-cols-3">
@@ -103,8 +101,8 @@
             <div>
               <h3 class="font-semibold">Browse its contents</h3>
               <p class="mt-1 text-sm leading-relaxed text-base-content/65">
-                Find posts, memories, friends, conversations, and account
-                details.
+                Review the import report, then browse posts, memories, friends,
+                conversations, and account details.
               </p>
             </div>
           </li>
@@ -120,6 +118,7 @@
           </li>
         </ol>
       </section>
+      <ArchiveHelp />
     </main>
   </div>
 </div>

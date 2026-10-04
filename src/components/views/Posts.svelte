@@ -65,9 +65,12 @@
     if (visibility !== "all") {
       filtered = filtered.filter((post) => {
         if (visibility === "friends") {
-          return !post.visibility.includes("friends-of-friends");
+          return (
+            Boolean(post.visibility?.length) &&
+            !post.visibility?.includes("friends-of-friends")
+          );
         } else if (visibility === "friends-of-friends") {
-          return post.visibility.includes("friends-of-friends");
+          return Boolean(post.visibility?.includes("friends-of-friends"));
         }
         return true;
       });
@@ -309,8 +312,10 @@
                         >
                           <RefreshCcw class="w-4 h-4" />
                           <span
-                            >{post.retakeCounter}
-                            retake{post.retakeCounter !== 1 ? "s" : ""}</span
+                            >{post.retakeCounter ?? "Not provided"}
+                            {post.retakeCounter !== undefined
+                              ? `retake${post.retakeCounter !== 1 ? "s" : ""}`
+                              : ""}</span
                           >
                         </div>
                         <div
@@ -318,7 +323,9 @@
                         >
                           <Eye class="w-4 h-4" />
                           <span class="capitalize"
-                            >{post.visibility.join(", ")}</span
+                            >{post.visibility?.length
+                              ? post.visibility.join(", ")
+                              : "Not provided"}</span
                           >
                         </div>
                       </div>

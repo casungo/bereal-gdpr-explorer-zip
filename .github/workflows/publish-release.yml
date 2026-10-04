@@ -45,6 +45,7 @@ jobs:
       - run: pnpm test:browser
       - run: pnpm check
       - run: pnpm build
+      - run: pnpm verify:seo
 
       - name: Create GitHub release and start deployment
         env:
